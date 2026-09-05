@@ -11,7 +11,7 @@ public sealed class UserRoleAppService(
     MiniShopDbContext db,
     UserManager<ApplicationUser> users,
     RoleManager<ApplicationRole> roles,
-    IAuditWriter audit) : IUserRoleAppService
+    AuditWriter audit) : IUserRoleAppService
 {
     public async Task<PagedResult<UserDto>> GetUsersAsync(
         PagedRequest request, CancellationToken cancellationToken)
