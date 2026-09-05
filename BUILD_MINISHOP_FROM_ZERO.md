@@ -136,6 +136,250 @@ npm install
 Set-Location ../..
 ```
 
+## Create the complete project from an empty folder
+
+This section is for explaining or rebuilding the project from zero. If you cloned this repository, skip to **Run from zero** because these projects and files already exist.
+
+### 1. Create the root folder and .NET solution
+
+```powershell
+New-Item -ItemType Directory -Force MiniShop
+Set-Location MiniShop
+
+dotnet new globaljson --sdk-version 10.0.203 --roll-forward latestPatch
+dotnet new sln --name MiniShop --format sln
+
+New-Item -ItemType Directory -Force backend/src
+New-Item -ItemType Directory -Force backend/tests
+```
+
+### 2. Create the backend projects
+
+```powershell
+dotnet new classlib -n MiniShop.Domain.Shared -o backend/src/MiniShop.Domain.Shared -f net10.0
+dotnet new classlib -n MiniShop.Domain -o backend/src/MiniShop.Domain -f net10.0
+dotnet new classlib -n MiniShop.Application.Contracts -o backend/src/MiniShop.Application.Contracts -f net10.0
+dotnet new classlib -n MiniShop.Application -o backend/src/MiniShop.Application -f net10.0
+dotnet new classlib -n MiniShop.EntityFrameworkCore -o backend/src/MiniShop.EntityFrameworkCore -f net10.0
+dotnet new webapi -n MiniShop.HttpApi -o backend/src/MiniShop.HttpApi -f net10.0 --use-controllers
+
+dotnet new xunit -n MiniShop.Application.Tests -o backend/tests/MiniShop.Application.Tests -f net10.0
+dotnet new xunit -n MiniShop.IntegrationTests -o backend/tests/MiniShop.IntegrationTests -f net10.0
+```
+
+Delete the generated sample files such as `Class1.cs`, `WeatherForecast.cs`, and the sample WeatherForecast controller. Then add every project to the solution:
+
+```powershell
+dotnet sln MiniShop.sln add backend/src/MiniShop.Domain.Shared/MiniShop.Domain.Shared.csproj
+dotnet sln MiniShop.sln add backend/src/MiniShop.Domain/MiniShop.Domain.csproj
+dotnet sln MiniShop.sln add backend/src/MiniShop.Application.Contracts/MiniShop.Application.Contracts.csproj
+dotnet sln MiniShop.sln add backend/src/MiniShop.Application/MiniShop.Application.csproj
+dotnet sln MiniShop.sln add backend/src/MiniShop.EntityFrameworkCore/MiniShop.EntityFrameworkCore.csproj
+dotnet sln MiniShop.sln add backend/src/MiniShop.HttpApi/MiniShop.HttpApi.csproj
+dotnet sln MiniShop.sln add backend/tests/MiniShop.Application.Tests/MiniShop.Application.Tests.csproj
+dotnet sln MiniShop.sln add backend/tests/MiniShop.IntegrationTests/MiniShop.IntegrationTests.csproj
+```
+
+### 3. Add backend project references
+
+The references enforce the dependency direction shown earlier:
+
+```powershell
+dotnet add backend/src/MiniShop.Domain/MiniShop.Domain.csproj reference backend/src/MiniShop.Domain.Shared/MiniShop.Domain.Shared.csproj
+
+dotnet add backend/src/MiniShop.Application.Contracts/MiniShop.Application.Contracts.csproj reference backend/src/MiniShop.Domain.Shared/MiniShop.Domain.Shared.csproj
+
+dotnet add backend/src/MiniShop.EntityFrameworkCore/MiniShop.EntityFrameworkCore.csproj reference backend/src/MiniShop.Domain/MiniShop.Domain.csproj
+
+dotnet add backend/src/MiniShop.Application/MiniShop.Application.csproj reference backend/src/MiniShop.Domain/MiniShop.Domain.csproj
+dotnet add backend/src/MiniShop.Application/MiniShop.Application.csproj reference backend/src/MiniShop.Application.Contracts/MiniShop.Application.Contracts.csproj
+dotnet add backend/src/MiniShop.Application/MiniShop.Application.csproj reference backend/src/MiniShop.EntityFrameworkCore/MiniShop.EntityFrameworkCore.csproj
+
+dotnet add backend/src/MiniShop.HttpApi/MiniShop.HttpApi.csproj reference backend/src/MiniShop.Application/MiniShop.Application.csproj
+dotnet add backend/src/MiniShop.HttpApi/MiniShop.HttpApi.csproj reference backend/src/MiniShop.EntityFrameworkCore/MiniShop.EntityFrameworkCore.csproj
+
+dotnet add backend/tests/MiniShop.Application.Tests/MiniShop.Application.Tests.csproj reference backend/src/MiniShop.Application/MiniShop.Application.csproj
+dotnet add backend/tests/MiniShop.IntegrationTests/MiniShop.IntegrationTests.csproj reference backend/src/MiniShop.HttpApi/MiniShop.HttpApi.csproj
+```
+
+### 4. Install backend packages and EF CLI
+
+```powershell
+dotnet add backend/src/MiniShop.EntityFrameworkCore package Microsoft.AspNetCore.Identity.EntityFrameworkCore --version 10.0.11
+dotnet add backend/src/MiniShop.EntityFrameworkCore package Microsoft.EntityFrameworkCore.Design --version 10.0.11
+dotnet add backend/src/MiniShop.EntityFrameworkCore package MySql.EntityFrameworkCore --version 10.0.9
+
+dotnet add backend/src/MiniShop.Application package Microsoft.EntityFrameworkCore --version 10.0.11
+dotnet add backend/src/MiniShop.Application package Microsoft.Extensions.Identity.Core --version 10.0.11
+dotnet add backend/src/MiniShop.Application package System.IdentityModel.Tokens.Jwt --version 8.14.0
+
+dotnet add backend/src/MiniShop.HttpApi package Microsoft.AspNetCore.Authentication.JwtBearer --version 10.0.11
+dotnet add backend/src/MiniShop.HttpApi package Microsoft.AspNetCore.OpenApi --version 10.0.11
+dotnet add backend/src/MiniShop.HttpApi package Microsoft.EntityFrameworkCore.Design --version 10.0.11
+dotnet add backend/src/MiniShop.HttpApi package Swashbuckle.AspNetCore --version 10.2.3
+
+dotnet add backend/tests/MiniShop.Application.Tests package NSubstitute --version 6.2.0
+dotnet add backend/tests/MiniShop.IntegrationTests package Microsoft.AspNetCore.Mvc.Testing --version 10.0.11
+dotnet add backend/tests/MiniShop.IntegrationTests package Testcontainers.MySql --version 4.14.0
+
+dotnet new tool-manifest
+dotnet tool install dotnet-ef --version 10.0.11
+dotnet restore MiniShop.sln
+```
+
+`MiniShop.EntityFrameworkCore.csproj` also needs the ASP.NET shared framework because `MiniShopDbContext` reads the authenticated `tenant_id` claim through `IHttpContextAccessor`:
+
+```xml
+<ItemGroup>
+  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+</ItemGroup>
+```
+
+### 5. Create the backend folders and files
+
+Keep one class per file. Create the folders from the solution root:
+
+```powershell
+$folders = @(
+  'backend/src/MiniShop.Domain.Shared/Authorization',
+  'backend/src/MiniShop.Domain.Shared/MultiTenancy',
+  'backend/src/MiniShop.Domain.Shared/Orders',
+  'backend/src/MiniShop.Domain.Shared/Validation',
+  'backend/src/MiniShop.Domain/Users',
+  'backend/src/MiniShop.Domain/Tenants',
+  'backend/src/MiniShop.Domain/Categories',
+  'backend/src/MiniShop.Domain/Products',
+  'backend/src/MiniShop.Domain/Customers',
+  'backend/src/MiniShop.Domain/Orders',
+  'backend/src/MiniShop.Domain/OrderItems',
+  'backend/src/MiniShop.Application.Contracts/Auth',
+  'backend/src/MiniShop.Application.Contracts/Tenants',
+  'backend/src/MiniShop.Application.Contracts/Paging',
+  'backend/src/MiniShop.Application.Contracts/Categories',
+  'backend/src/MiniShop.Application.Contracts/Products',
+  'backend/src/MiniShop.Application.Contracts/Customers',
+  'backend/src/MiniShop.Application.Contracts/Orders',
+  'backend/src/MiniShop.Application.Contracts/OrderItems',
+  'backend/src/MiniShop.Application/Auth',
+  'backend/src/MiniShop.Application/Exceptions',
+  'backend/src/MiniShop.Application/Categories',
+  'backend/src/MiniShop.Application/Products',
+  'backend/src/MiniShop.Application/Customers',
+  'backend/src/MiniShop.Application/Orders',
+  'backend/src/MiniShop.EntityFrameworkCore/Configurations',
+  'backend/src/MiniShop.EntityFrameworkCore/Seeding',
+  'backend/src/MiniShop.HttpApi/Controllers'
+)
+$folders | ForEach-Object { New-Item -ItemType Directory -Force $_ }
+```
+
+Add the classes using the exact paths shown in **Solution layout**. The working repository files are the source of truth: entities go in `Domain`, DTOs in `Application.Contracts`, application interfaces and services in `Application`, EF mappings/migrations in `EntityFrameworkCore`, and controllers plus startup configuration in `HttpApi`.
+
+### 6. Configure local secrets
+
+The repository contains obvious demo-only defaults so it runs immediately. For your own machine, override them with user-secrets instead of committing real passwords or signing keys:
+
+```powershell
+dotnet user-secrets init --project backend/src/MiniShop.HttpApi
+dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3308;Database=minishop;User=minishop;Password=YOUR_LOCAL_PASSWORD" --project backend/src/MiniShop.HttpApi
+dotnet user-secrets set "Jwt:SigningKey" "replace-with-at-least-32-random-characters" --project backend/src/MiniShop.HttpApi
+```
+
+Create `docker-compose.yml` in the solution root for local MySQL:
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: minishop-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_password
+      MYSQL_DATABASE: minishop
+      MYSQL_USER: minishop
+      MYSQL_PASSWORD: minishop_dev_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - minishop_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_dev_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  minishop_mysql_data:
+```
+
+The development connection string must use port `3308`, database `minishop`, user `minishop`, and the same development password. Real credentials must not be committed.
+
+### 7. Create the Angular 22 application
+
+Run this from the solution root:
+
+```powershell
+npx @angular/cli@22.1.7 new minishop-ui --directory frontend/minishop-ui --standalone --routing --style css --ssr=false --skip-git --skip-tests --package-manager npm
+
+Set-Location frontend/minishop-ui
+npm install primeng@22.1.0 @primeuix/themes@3.0.0 primeicons@8.0.0 @angular/cdk@22.1.5
+```
+
+Generate the standalone pages. `--type page` produces names such as `login.page.ts`, and `--inline-style` avoids empty CSS files:
+
+```powershell
+npx ng generate component features/auth/login --standalone --type page --inline-style --skip-tests
+npx ng generate component features/auth/register --standalone --type page --inline-style --skip-tests
+npx ng generate component features/catalog --standalone --type page --inline-style --skip-tests
+npx ng generate component features/dashboard --standalone --type page --inline-style --skip-tests
+npx ng generate component features/categories --standalone --type page --inline-style --skip-tests
+npx ng generate component features/products --standalone --type page --inline-style --skip-tests
+npx ng generate component features/customers --standalone --type page --inline-style --skip-tests
+npx ng generate component features/orders/order-list --standalone --type page --inline-style --skip-tests
+npx ng generate component features/orders/order-edit --standalone --type page --inline-style --skip-tests
+
+npx ng generate service core/auth --skip-tests
+npx ng generate service core/services/category --skip-tests
+npx ng generate service core/services/product --skip-tests
+npx ng generate service core/services/customer --skip-tests
+npx ng generate service core/services/order --skip-tests
+npx ng generate interceptor core/auth --functional
+```
+
+Create `src/app/core/auth.guards.ts`, the model files under `src/app/models`, and the environment files described in the next section. Use the existing repository files as the complete implementation rather than placing all application source inside this guide.
+
+### 8. Configure Angular routes
+
+Angular routing is enabled by `--routing`. `src/app/app.config.ts` must register `provideRouter(routes)`, `provideHttpClient(withInterceptors([authInterceptor]))`, animations, and PrimeNG. Define these lazy standalone routes in `src/app/app.routes.ts`:
+
+```text
+/login                  LoginPage
+/register               RegisterPage
+/catalog                CatalogPage              authGuard
+/admin                  DashboardPage            authGuard + adminGuard
+/admin/categories       CategoriesPage           authGuard + adminGuard
+/admin/products         ProductsPage             authGuard + adminGuard
+/admin/customers        CustomersPage            authGuard + adminGuard
+/admin/orders           OrdersPage               authGuard + adminGuard
+/admin/orders/new       OrderEditPage            authGuard + adminGuard
+/admin/orders/:id       OrderEditPage            authGuard + adminGuard
+```
+
+Each route uses `loadComponent: () => import(...).then(...)`, which lazy-loads the page. The empty route and unknown routes redirect to `/login`.
+
+### 9. Create the database migration
+
+After adding the entities, `IMultiTenant`, DbContext, mappings, Identity configuration, and connection string, return to the solution root and run:
+
+```powershell
+Set-Location ../..
+dotnet build MiniShop.sln
+dotnet ef migrations add InitialCreate --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi --output-dir Migrations
+dotnet ef database update --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi
+```
+
+This repository has three migrations because `long` keys and multi-tenancy were added as later interview steps. When rebuilding the final model from zero, one new `InitialCreate` migration is enough and will contain the final schema.
+
 ## Angular environment configuration
 
 The frontend reads `API_BASE_URL` from an Angular environment file instead of hard-coding the API address in a service. Create the environment folder and files from `frontend/minishop-ui`:
