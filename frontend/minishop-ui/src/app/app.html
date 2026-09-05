@@ -3,13 +3,17 @@
 
 @if (auth.user()) {
   <div class="shell">
-    <aside [class.open]="menuOpen">
+    <aside id="main-navigation" [class.open]="menuOpen">
+      <button class="close-menu" type="button" aria-label="Close navigation" (click)="closeMenu()">
+        <i class="pi pi-times"></i>
+      </button>
+
       <div class="brand">
         <span class="mark">{{ auth.user()?.tenantName?.charAt(0) }}</span>
         <span>{{ auth.user()?.tenantName }}<small>Operations</small></span>
       </div>
 
-      <nav>
+      <nav (click)="closeMenu()">
         <a routerLink="/catalog" routerLinkActive="active">
           <i class="pi pi-shopping-bag"></i>Catalog
         </a>
@@ -49,11 +53,22 @@
       </div>
     </aside>
 
+    @if (menuOpen) {
+      <button
+        class="menu-backdrop"
+        type="button"
+        aria-label="Close navigation"
+        (click)="closeMenu()"
+      ></button>
+    }
+
     <section class="content">
       <button
         class="menu"
         type="button"
         (click)="menuOpen = !menuOpen"
+        aria-controls="main-navigation"
+        [attr.aria-expanded]="menuOpen"
         aria-label="Toggle navigation"
       >
         <i class="pi pi-bars"></i>
