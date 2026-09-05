@@ -1,53 +1,40 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './core/auth.guards';
+import { adminGuard, authGuard } from './core/auth.guards';
+
 export const routes: Routes = [
   {
     path: 'login',
-    loadComponent: () => import('./features/auth/login/login.page').then((page) => page.LoginPage),
+    loadComponent: () => import('./features/auth/login/login.page').then((x) => x.LoginPage),
   },
   {
-    path: 'register',
-    loadComponent: () => import('./features/auth/register/register.page').then((page) => page.RegisterPage),
-  },
-  {
-    path: 'catalog',
-    loadComponent: () => import('./features/catalog/catalog.page').then((page) => page.CatalogPage),
+    path: 'dashboard',
     canActivate: [authGuard],
+    loadComponent: () => import('./features/dashboard/dashboard.page').then((x) => x.DashboardPage),
   },
   {
-    path: 'admin',
-    loadComponent: () => import('./features/dashboard/dashboard.page').then((page) => page.DashboardPage),
+    path: 'users',
     canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./features/users/users.page').then((x) => x.UsersPage),
   },
   {
-    path: 'admin/categories',
-    loadComponent: () => import('./features/categories/categories.page').then((page) => page.CategoriesPage),
+    path: 'roles',
     canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./features/roles/roles.page').then((x) => x.RolesPage),
   },
   {
-    path: 'admin/products',
-    loadComponent: () => import('./features/products/products.page').then((page) => page.ProductsPage),
-    canActivate: [authGuard, adminGuard],
+    path: 'requests',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/requests/requests.page').then((x) => x.RequestsPage),
   },
   {
-    path: 'admin/customers',
-    loadComponent: () => import('./features/customers/customers.page').then((page) => page.CustomersPage),
-    canActivate: [authGuard, adminGuard],
+    path: 'approvals',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/approvals/approvals.page').then((x) => x.ApprovalsPage),
   },
   {
-    path: 'admin/orders',
-    loadComponent: () => import('./features/orders/order-list/orders.page').then((page) => page.OrdersPage),
-    canActivate: [authGuard, adminGuard],
-  },
-  {
-    path: 'admin/orders/new',
-    loadComponent: () => import('./features/orders/order-edit/order-edit.page').then((page) => page.OrderEditPage),
-    canActivate: [authGuard, adminGuard],
-  },
-  {
-    path: 'admin/orders/:id',
-    loadComponent: () => import('./features/orders/order-edit/order-edit.page').then((page) => page.OrderEditPage),
-    canActivate: [authGuard, adminGuard],
+    path: 'provisioning',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/provisioning/provisioning.page').then((x) => x.ProvisioningPage),
   },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },

@@ -1,22 +1,22 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: minishop-mysql
+    container_name: access-management-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_dev_password
-      MYSQL_DATABASE: minishop
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: access_management
       MYSQL_USER: minishop
-      MYSQL_PASSWORD: minishop_dev_password
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
     ports:
       - "3308:3306"
     volumes:
-      - minishop_mysql_data:/var/lib/mysql
+      - access_management_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_dev_password"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
       timeout: 5s
       retries: 20
 
 volumes:
-  minishop_mysql_data:
+  access_management_mysql_data:

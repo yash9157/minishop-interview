@@ -6,13 +6,14 @@ using MiniShop.Domain;
 namespace MiniShop.EntityFrameworkCore;
 
 public sealed class MiniShopDbContext(DbContextOptions<MiniShopDbContext> options)
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
-    public DbSet<Category> Categories => Set<Category>();
-    public DbSet<Product> Products => Set<Product>();
-    public DbSet<Customer> Customers => Set<Customer>();
-    public DbSet<Order> Orders => Set<Order>();
-    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<TargetSystem> TargetSystems => Set<TargetSystem>();
+    public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
+    public DbSet<ApprovalHistory> ApprovalHistory => Set<ApprovalHistory>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

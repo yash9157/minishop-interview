@@ -2,8 +2,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MiniShop.Application.Contracts;
@@ -14,69 +14,91 @@ namespace MiniShop.IntegrationTests;
 
 public sealed class ApiSmokeTests : IAsyncLifetime
 {
-    private readonly MySqlContainer _mysql = new MySqlBuilder("mysql:8.4")
-        .WithDatabase("minishop_tests")
-        .WithUsername("minishop_test")
-        .WithPassword("Test_password_123!")
-        .Build();
+    private readonly string password = $"T!{Guid.NewGuid():N}aA1";
+    private readonly MySqlContainer mysql;
+    private WebApplicationFactory<Program>? factory;
+    private HttpClient? client;
+    private HttpClient Client => client ??= factory!.CreateClient();
 
-    private WebApplicationFactory<Program>? _factory;
-    private HttpClient? _client;
+    public ApiSmokeTests()
+    {
+        mysql = new MySqlBuilder("mysql:8.4")
+            .WithDatabase("access_tests").WithUsername("test")
+            .WithPassword(password).Build();
+    }
+
+    [Fact]
+    public async Task AccessRequestCompletesTwoApprovalsAndProvisioning()
+    {
+        await LoginAsync("employee@access.local", password);
+        var systems = await Client.GetFromJsonAsync<TargetSystemDto[]>("/api/target-systems");
+        var roles = await Client.GetFromJsonAsync<RoleDto[]>("/api/roles");
+        var maker = roles!.Single(x => x.Name == "Maker");
+        var created = await (await Client.PostAsJsonAsync("/api/access-requests",
+            new CreateAccessRequest
+            {
+                TargetSystemId = systems![0].Id,
+                RequestedRoleId = maker.Id,
+                BusinessJustification = "Required for daily transaction work."
+            })).Content.ReadFromJsonAsync<AccessRequestDto>();
+        var submitted = await (await Client.PostAsync(
+            $"/api/access-requests/{created!.Id}/submit", null))
+            .Content.ReadFromJsonAsync<AccessRequestDto>();
+        Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Pending, submitted!.Status);
+
+        await LoginAsync("manager@access.local", password);
+        await Client.PostAsJsonAsync($"/api/access-requests/{created.Id}/approve",
+            new ApprovalActionRequest { Remarks = "Manager approved." });
+        await LoginAsync("security@access.local", password);
+        var approved = await (await Client.PostAsJsonAsync(
+            $"/api/access-requests/{created.Id}/approve",
+            new ApprovalActionRequest { Remarks = "Security approved." }))
+            .Content.ReadFromJsonAsync<AccessRequestDto>();
+        Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Approved, approved!.Status);
+
+        await LoginAsync("admin@access.local", password);
+        var provisioned = await (await Client.PostAsync(
+            $"/api/access-requests/{created.Id}/provision", null))
+            .Content.ReadFromJsonAsync<AccessRequestDto>();
+        Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Provisioned, provisioned!.Status);
+    }
 
     public async Task InitializeAsync()
     {
-        await _mysql.StartAsync();
-
-        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        await mysql.StartAsync();
+        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureAppConfiguration((_, configuration) =>
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:Default"] = _mysql.GetConnectionString()
+                    ["ConnectionStrings:Default"] = mysql.GetConnectionString(),
+                    ["DemoPassword"] = password,
+                    ["Jwt:SigningKey"] = password
                 }));
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<MiniShopDbContext>>();
-                services.AddDbContext<MiniShopDbContext>(options =>
-                    options.UseMySQL(_mysql.GetConnectionString()));
+                services.AddDbContext<MiniShopDbContext>(
+                    options => options.UseMySQL(mysql.GetConnectionString()));
             });
         });
-
-        _client = _factory.CreateClient();
     }
 
-    [Fact]
-    public async Task AdminCanLoginAndReadSeededProducts()
+    private async Task LoginAsync(string email, string password)
     {
-        var client = _client ?? throw new InvalidOperationException("The test client was not initialized.");
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
-        {
-            Email = "admin@minishop.local",
-            Password = "Admin@12345"
-        });
-
-        loginResponse.EnsureSuccessStatusCode();
-        var login = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
-        Assert.NotNull(login);
-        var loginResult = login!;
-        Assert.Contains("Admin", loginResult.User.Roles);
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
-        var productsResponse = await client.GetAsync("/api/products?page=1&pageSize=10");
-
-        productsResponse.EnsureSuccessStatusCode();
-        var products = await productsResponse.Content.ReadFromJsonAsync<PagedResult<ProductDto>>();
-        Assert.NotNull(products);
-        Assert.Equal(3, products.TotalCount);
-        Assert.Contains(products.Items, product => product.Sku == "BOOK-001");
+        var response = await Client.PostAsJsonAsync(
+            "/api/auth/login", new LoginRequest { Email = email, Password = password });
+        response.EnsureSuccessStatusCode();
+        var login = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", login!.AccessToken);
     }
 
     public async Task DisposeAsync()
     {
-        _client?.Dispose();
-        if (_factory is not null)
-            await _factory.DisposeAsync();
-        await _mysql.DisposeAsync();
+        client?.Dispose();
+        if (factory is not null) await factory.DisposeAsync();
+        await mysql.DisposeAsync();
     }
 }

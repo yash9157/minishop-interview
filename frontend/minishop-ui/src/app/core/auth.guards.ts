@@ -6,4 +6,4 @@ export const authGuard: CanActivateFn = () =>
   inject(AuthService).user() ? true : inject(Router).parseUrl('/login');
 
 export const adminGuard: CanActivateFn = () =>
-  inject(AuthService).isAdmin() ? true : inject(Router).parseUrl('/catalog');
+  inject(AuthService).isAdmin() ? true : inject(Router).parseUrl('/dashboard');

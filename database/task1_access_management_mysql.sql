@@ -1,0 +1,153 @@
+CREATE DATABASE IF NOT EXISTS access_management;
+USE access_management;
+
+CREATE TABLE Users (
+    Id CHAR(36) PRIMARY KEY,
+    FullName VARCHAR(120) NOT NULL,
+    Email VARCHAR(255) NOT NULL UNIQUE,
+    ManagerId CHAR(36) NULL,
+    IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+    IsDeleted BOOLEAN NOT NULL DEFAULT FALSE,
+    CreatedAtUtc DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    DeletedAtUtc DATETIME(6) NULL,
+    FOREIGN KEY (ManagerId) REFERENCES Users(Id)
+);
+CREATE TABLE Roles (
+    Id CHAR(36) PRIMARY KEY,
+    Name VARCHAR(80) NOT NULL UNIQUE,
+    IsRequestable BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE Permissions (
+    Id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    Code VARCHAR(80) NOT NULL UNIQUE,
+    Name VARCHAR(120) NOT NULL
+);
+CREATE TABLE UserRoles (
+    UserId CHAR(36) NOT NULL,
+    RoleId CHAR(36) NOT NULL,
+    PRIMARY KEY (UserId, RoleId),
+    FOREIGN KEY (UserId) REFERENCES Users(Id),
+    FOREIGN KEY (RoleId) REFERENCES Roles(Id)
+);
+CREATE TABLE RolePermissions (
+    RoleId CHAR(36) NOT NULL,
+    PermissionId BIGINT NOT NULL,
+    PRIMARY KEY (RoleId, PermissionId),
+    FOREIGN KEY (RoleId) REFERENCES Roles(Id),
+    FOREIGN KEY (PermissionId) REFERENCES Permissions(Id)
+);
+CREATE TABLE TargetSystems (
+    Id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(120) NOT NULL UNIQUE,
+    IsActive BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE AccessRequests (
+    Id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    RequesterId CHAR(36) NOT NULL,
+    TargetSystemId BIGINT NOT NULL,
+    RequestedRoleId CHAR(36) NOT NULL,
+    BusinessJustification VARCHAR(1000) NOT NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'Draft',
+    CreatedAtUtc DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    SubmittedAtUtc DATETIME(6) NULL,
+    ProvisionedById CHAR(36) NULL,
+    ProvisionedAtUtc DATETIME(6) NULL,
+    CHECK (Status IN ('Draft','Pending','Approved','Rejected','Provisioned')),
+    FOREIGN KEY (RequesterId) REFERENCES Users(Id),
+    FOREIGN KEY (TargetSystemId) REFERENCES TargetSystems(Id),
+    FOREIGN KEY (RequestedRoleId) REFERENCES Roles(Id),
+    FOREIGN KEY (ProvisionedById) REFERENCES Users(Id)
+);
+CREATE TABLE ApprovalHistory (
+    Id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    AccessRequestId BIGINT NOT NULL,
+    ApprovalLevel INT NOT NULL,
+    ApproverId CHAR(36) NOT NULL,
+    Decision VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    Remarks VARCHAR(500) NULL,
+    DecisionAtUtc DATETIME(6) NULL,
+    UNIQUE (AccessRequestId, ApprovalLevel),
+    CHECK (ApprovalLevel >= 1),
+    CHECK (Decision IN ('Pending','Approved','Rejected')),
+    FOREIGN KEY (AccessRequestId) REFERENCES AccessRequests(Id),
+    FOREIGN KEY (ApproverId) REFERENCES Users(Id)
+);
+CREATE TABLE AuditLogs (
+    Id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    UserId CHAR(36) NULL,
+    Action VARCHAR(60) NOT NULL,
+    Entity VARCHAR(80) NOT NULL,
+    EntityId VARCHAR(80) NOT NULL,
+    TimestampUtc DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    OldValue JSON NULL,
+    NewValue JSON NULL,
+    FOREIGN KEY (UserId) REFERENCES Users(Id)
+);
+
+INSERT INTO Users (Id, FullName, Email, ManagerId) VALUES
+('00000000-0000-0000-0000-000000000001', 'Manager One', 'manager@example.com', NULL),
+('00000000-0000-0000-0000-000000000002', 'Employee One', 'employee@example.com',
+ '00000000-0000-0000-0000-000000000001'),
+('00000000-0000-0000-0000-000000000003', 'Security Admin', 'security@example.com', NULL);
+INSERT INTO Roles (Id, Name) VALUES
+('10000000-0000-0000-0000-000000000001', 'Maker'),
+('10000000-0000-0000-0000-000000000002', 'Checker'),
+('10000000-0000-0000-0000-000000000003', 'Viewer');
+INSERT INTO Permissions (Code, Name) VALUES
+('ACCESS.READ', 'Read access data'),
+('TRANSACTION.CREATE', 'Create transactions'),
+('TRANSACTION.APPROVE', 'Approve transactions'),
+('REPORT.READ', 'Read reports');
+INSERT INTO UserRoles (UserId, RoleId) VALUES
+('00000000-0000-0000-0000-000000000002',
+ '10000000-0000-0000-0000-000000000001');
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT '10000000-0000-0000-0000-000000000001', Id
+FROM Permissions WHERE Code IN ('ACCESS.READ', 'TRANSACTION.CREATE');
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT '10000000-0000-0000-0000-000000000002', Id
+FROM Permissions WHERE Code IN ('ACCESS.READ', 'TRANSACTION.APPROVE');
+INSERT INTO RolePermissions (RoleId, PermissionId)
+SELECT '10000000-0000-0000-0000-000000000003', Id
+FROM Permissions WHERE Code IN ('ACCESS.READ', 'REPORT.READ');
+
+-- Effective permissions for a given user.
+SET @UserId = '00000000-0000-0000-0000-000000000002';
+SELECT DISTINCT p.Code, p.Name
+FROM UserRoles ur
+JOIN RolePermissions rp ON rp.RoleId = ur.RoleId
+JOIN Permissions p ON p.Id = rp.PermissionId
+WHERE ur.UserId = @UserId
+ORDER BY p.Code;
+
+-- Pending requests currently awaiting a given approver.
+SET @ApproverId = '00000000-0000-0000-0000-000000000001';
+SELECT ar.*
+FROM AccessRequests ar
+JOIN ApprovalHistory currentApproval ON currentApproval.AccessRequestId = ar.Id
+WHERE ar.Status = 'Pending'
+  AND currentApproval.ApproverId = @ApproverId
+  AND currentApproval.Decision = 'Pending'
+  AND NOT EXISTS (
+      SELECT 1 FROM ApprovalHistory previousApproval
+      WHERE previousApproval.AccessRequestId = ar.Id
+        AND previousApproval.ApprovalLevel < currentApproval.ApprovalLevel
+        AND previousApproval.Decision <> 'Approved'
+  );
+
+-- Users with the conflicting Maker and Checker roles.
+SELECT u.Id, u.FullName
+FROM Users u
+JOIN UserRoles ur ON ur.UserId = u.Id
+JOIN Roles r ON r.Id = ur.RoleId
+WHERE r.Name IN ('Maker', 'Checker')
+GROUP BY u.Id, u.FullName
+HAVING COUNT(DISTINCT r.Name) = 2;
+
+-- Composite indexes support permissions, approval queues, dashboard and audit queries.
+CREATE INDEX IX_UserRoles_RoleId ON UserRoles(RoleId, UserId);
+CREATE INDEX IX_RolePermissions_PermissionId ON RolePermissions(PermissionId, RoleId);
+CREATE INDEX IX_AccessRequests_Status_Created ON AccessRequests(Status, CreatedAtUtc);
+CREATE INDEX IX_ApprovalHistory_Approver_Decision
+    ON ApprovalHistory(ApproverId, Decision, AccessRequestId, ApprovalLevel);
+CREATE INDEX IX_AuditLogs_Timestamp ON AuditLogs(TimestampUtc DESC);

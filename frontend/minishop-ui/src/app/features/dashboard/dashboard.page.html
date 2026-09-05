@@ -1,12 +1,26 @@
-<div class="page-head">
-  <div>
-    <h1>Dashboard</h1>
-    <p class="muted">Manage your store from one place.</p>
+<div class="page-head"><div><h1>Dashboard</h1><p class="muted">Access overview and recent activity.</p></div></div>
+@if (data(); as dashboard) {
+  <div class="cards">
+    <article class="card"><strong>{{ dashboard.pendingApprovals }}</strong><span>Pending approvals</span></article>
+    @for (item of dashboard.requestsByStatus | keyvalue; track item.key) {
+      <article class="card"><strong>{{ item.value }}</strong><span>{{ item.key }} requests</span></article>
+    }
   </div>
-  <p-button label="Create order" icon="pi pi-plus" routerLink="/admin/orders/new" />
-</div>
-
-<div class="panel">
-  <h2>Store management</h2>
-  <p class="muted">Use the navigation to manage categories, products, customers and orders.</p>
-</div>
+  <div class="panel section-head">
+    <h2>Users by role</h2>
+    <div class="chips">
+      @for (item of dashboard.usersByRole | keyvalue; track item.key) {
+        <span>{{ item.key }}: {{ item.value }}</span>
+      }
+    </div>
+  </div>
+  <div class="panel section-head table-wrap">
+    <h2>Latest 10 audit logs</h2>
+    <table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th></tr></thead>
+      <tbody>@for (log of dashboard.latestAuditLogs; track log.id) {
+        <tr><td>{{ log.timestampUtc | date:'medium' }}</td><td>{{ log.user }}</td>
+          <td>{{ log.action }}</td><td>{{ log.entity }} #{{ log.entityId }}</td></tr>
+      }</tbody>
+    </table>
+  </div>
+}

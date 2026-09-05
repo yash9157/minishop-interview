@@ -5,34 +5,34 @@
   <div class="shell">
     <aside [class.open]="menuOpen">
       <div class="brand">
-        <span class="mark">M</span>
-        <span>MiniShop<small>Operations</small></span>
+        <span class="mark">A</span>
+        <span>Access Portal<small>Management</small></span>
       </div>
 
       <nav>
-        <a routerLink="/catalog" routerLinkActive="active">
-          <i class="pi pi-shopping-bag"></i>Catalog
+        <a routerLink="/dashboard" routerLinkActive="active">
+          <i class="pi pi-chart-bar"></i>Dashboard
         </a>
+        <a routerLink="/requests" routerLinkActive="active">
+          <i class="pi pi-send"></i>My Requests
+        </a>
+        @if (auth.canApprove()) {
+          <a routerLink="/approvals" routerLinkActive="active">
+            <i class="pi pi-check-circle"></i>Approvals
+          </a>
+        }
+        @if (auth.canProvision()) {
+          <a routerLink="/provisioning" routerLinkActive="active">
+            <i class="pi pi-key"></i>Provisioning
+          </a>
+        }
         @if (auth.isAdmin()) {
           <span class="label">Administration</span>
-          <a
-            routerLink="/admin"
-            [routerLinkActiveOptions]="{ exact: true }"
-            routerLinkActive="active"
-          >
-            <i class="pi pi-chart-bar"></i>Overview
+          <a routerLink="/users" routerLinkActive="active">
+            <i class="pi pi-users"></i>Users
           </a>
-          <a routerLink="/admin/categories" routerLinkActive="active">
-            <i class="pi pi-tags"></i>Categories
-          </a>
-          <a routerLink="/admin/products" routerLinkActive="active">
-            <i class="pi pi-box"></i>Products
-          </a>
-          <a routerLink="/admin/customers" routerLinkActive="active">
-            <i class="pi pi-users"></i>Customers
-          </a>
-          <a routerLink="/admin/orders" routerLinkActive="active">
-            <i class="pi pi-receipt"></i>Orders
+          <a routerLink="/roles" routerLinkActive="active">
+            <i class="pi pi-shield"></i>Roles & Permissions
           </a>
         }
       </nav>

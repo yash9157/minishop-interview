@@ -24,7 +24,7 @@ public static class DependencyInjection
                 options.Password.RequireNonAlphanumeric = true;
                 options.User.RequireUniqueEmail = true;
             })
-            .AddRoles<IdentityRole<Guid>>()
+            .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<MiniShopDbContext>();
 
         services.AddScoped<DatabaseSeeder>();

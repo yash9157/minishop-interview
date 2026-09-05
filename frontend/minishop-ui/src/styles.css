@@ -19,7 +19,8 @@ body {
 }
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 a {
@@ -79,6 +80,51 @@ p {
 .panel > p:last-child {
   margin-bottom: 0;
 }
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+.card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.card strong { font-size: 1.8rem; }
+.card span, small { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chips span, .status {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  font-size: 0.8rem;
+}
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+th, td { padding: 0.75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: #475569; font-size: 0.78rem; }
+input, textarea, select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+}
+input[type='checkbox'] { width: auto; }
+td button { margin: 0.15rem; }
+button {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+button.primary { color: #fff; border-color: var(--primary); background: var(--primary); }
+button.danger { color: #b91c1c; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .form-grid {
   display: grid;

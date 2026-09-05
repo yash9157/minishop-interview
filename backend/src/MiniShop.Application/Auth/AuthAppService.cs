@@ -2,43 +2,32 @@ using Microsoft.AspNetCore.Identity;
 using MiniShop.Application.Contracts;
 using MiniShop.Domain;
 using MiniShop.Domain.Shared;
+using MiniShop.EntityFrameworkCore;
 
 namespace MiniShop.Application;
 
 public sealed class AuthAppService(
     UserManager<ApplicationUser> userManager,
-    IJwtTokenService jwtTokenService) : IAuthAppService
+    IJwtTokenService jwtTokenService,
+    MiniShopDbContext dbContext) : IAuthAppService
 {
-    public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
-    {
-        var email = request.Email.Trim().ToLowerInvariant();
-        if (await userManager.FindByEmailAsync(email) is not null)
-            throw new ConflictException("An account with this email already exists.");
-
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            FullName = request.FullName.Trim(),
-            Email = email,
-            UserName = email,
-            EmailConfirmed = true
-        };
-
-        var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
-            throw new BusinessException(string.Join(" ", result.Errors.Select(error => error.Description)));
-
-        await userManager.AddToRoleAsync(user, Roles.User);
-        return await jwtTokenService.CreateAsync(user, cancellationToken);
-    }
-
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null || !user.IsActive || user.IsDeleted ||
+            !await userManager.CheckPasswordAsync(user, request.Password))
             throw new UnauthorizedException("Invalid email or password.");
 
-        return await jwtTokenService.CreateAsync(user, cancellationToken);
+        var response = await jwtTokenService.CreateAsync(user, cancellationToken);
+        dbContext.AuditLogs.Add(new AuditLog
+        {
+            UserId = user.Id,
+            Action = "Login",
+            Entity = "User",
+            EntityId = user.Id.ToString()
+        });
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return response;
     }
 
     public async Task<CurrentUserDto> GetCurrentAsync(Guid userId, CancellationToken cancellationToken)

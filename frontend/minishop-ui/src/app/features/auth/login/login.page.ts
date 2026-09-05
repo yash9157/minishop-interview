@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputPasswordModule } from 'primeng/inputpassword';
@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, ButtonModule, InputTextModule, InputPasswordModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, InputPasswordModule],
   templateUrl: './login.page.html',
 })
 export class LoginPage {
@@ -18,11 +18,11 @@ export class LoginPage {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly form = new FormGroup({
-    email: new FormControl('admin@minishop.local', {
+    email: new FormControl('admin@access.local', {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
-    password: new FormControl('Admin@12345', {
+    password: new FormControl('', {
       nonNullable: true,
       validators: Validators.required,
     }),
@@ -36,7 +36,7 @@ export class LoginPage {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: (response) =>
         void this.router.navigateByUrl(
-          response.user.roles.includes('Admin') ? '/admin' : '/catalog',
+          '/dashboard',
         ),
       error: (error) => {
         this.error.set(error.error?.detail ?? 'Login failed.');

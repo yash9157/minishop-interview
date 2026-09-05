@@ -1,0 +1,27 @@
+<div class="page-head"><div><h1>Users</h1><p class="muted">Create users and assign multiple roles.</p></div></div>
+<form class="panel form-grid" [formGroup]="form" (ngSubmit)="create()">
+  <div class="field"><label>Full name</label><input formControlName="fullName"></div>
+  <div class="field"><label>Email</label><input formControlName="email"></div>
+  <div class="field"><label>Password</label><input type="password" formControlName="password"></div>
+  <div class="field"><label>Manager</label><select formControlName="managerId">
+    <option [ngValue]="null">No manager</option>
+    @for (user of users(); track user.id) { <option [value]="user.id">{{ user.fullName }}</option> }
+  </select></div>
+  <div class="full"><button class="primary" type="submit" [disabled]="form.invalid">Create user</button></div>
+</form>
+@if (error()) { <p class="error-message">{{ error() }}</p> }
+@if (permissions().length) { <div class="panel section-head"><strong>Effective permissions:</strong> {{ permissions().join(', ') }}</div> }
+<div class="panel section-head table-wrap"><table>
+  <thead><tr><th>User</th><th>Manager</th><th>Roles</th><th>Assign role</th><th>Actions</th></tr></thead>
+  <tbody>@for (user of users(); track user.id) {
+    <tr><td><strong>{{ user.fullName }}</strong><br><small>{{ user.email }}</small></td>
+      <td>{{ user.managerName || '-' }}</td><td>{{ user.roles.join(', ') }}</td>
+      <td><select [(value)]="selectedRoles[user.id]" (change)="selectedRoles[user.id] = $any($event.target).value">
+        <option value="">Select</option>@for (role of roles(); track role.id) {
+          <option [value]="role.id">{{ role.name }}</option>
+        }</select> <button type="button" (click)="assign(user)">Assign</button></td>
+      <td><button type="button" (click)="showPermissions(user)">Permissions</button>
+        <button type="button" (click)="edit(user)">Edit</button>
+        <button class="danger" type="button" (click)="remove(user)">Deactivate</button></td></tr>
+  }</tbody>
+</table></div>

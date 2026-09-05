@@ -29,6 +29,11 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         {
             await WriteProblemAsync(context, StatusCodes.Status401Unauthorized, exception.Message);
         }
+        catch (UnauthorizedAccessException)
+        {
+            await WriteProblemAsync(
+                context, StatusCodes.Status401Unauthorized, "Authentication is required.");
+        }
         catch (DbUpdateException ex)
         {
             logger.LogWarning(ex, "A database constraint rejected the request.");

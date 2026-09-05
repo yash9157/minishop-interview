@@ -1,6 +1,11 @@
-@MiniShop.HttpApi_HostAddress = http://localhost:5239
+@Host = http://localhost:5239
 
-GET {{MiniShop.HttpApi_HostAddress}}/weatherforecast/
-Accept: application/json
+POST {{Host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@access.local",
+  "password": "<DEMO_PASSWORD>"
+}
 
 ###

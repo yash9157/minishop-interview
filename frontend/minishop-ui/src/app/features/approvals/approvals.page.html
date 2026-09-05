@@ -1,0 +1,12 @@
+<div class="page-head"><div><h1>Pending approvals</h1><p class="muted">Approve or reject requests assigned to you.</p></div></div>
+@if (error()) { <p class="error-message">{{ error() }}</p> }
+<div class="panel table-wrap"><table>
+  <thead><tr><th>Requester</th><th>System</th><th>Role</th><th>Justification</th><th>Remarks</th><th>Decision</th></tr></thead>
+  <tbody>@for (request of requests(); track request.id) {
+    <tr><td>{{ request.requesterName }}</td><td>{{ request.targetSystem }}</td>
+      <td>{{ request.requestedRole }}</td><td>{{ request.businessJustification }}</td>
+      <td><input [(ngModel)]="remarks[request.id]" placeholder="Optional remarks"></td>
+      <td><button class="primary" type="button" (click)="decide(request.id, 'approve')">Approve</button>
+        <button class="danger" type="button" (click)="decide(request.id, 'reject')">Reject</button></td></tr>
+  } @empty { <tr><td colspan="6">No requests are awaiting your approval.</td></tr> }</tbody>
+</table></div>

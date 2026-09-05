@@ -7,7 +7,6 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth.interceptor';
-import { primeUiLicense } from './primeui-license';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,7 +15,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     providePrimeNG({
-      license: primeUiLicense,
       theme: {
         preset: Aura,
         options: { darkModeSelector: false },
