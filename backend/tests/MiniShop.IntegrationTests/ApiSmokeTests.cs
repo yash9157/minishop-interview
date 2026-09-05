@@ -52,6 +52,7 @@ public sealed class ApiSmokeTests : IAsyncLifetime
         var client = _client ?? throw new InvalidOperationException("The test client was not initialized.");
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
         {
+            TenantCode = "minishop",
             Email = "admin@minishop.local",
             Password = "Admin@12345"
         });
@@ -70,6 +71,36 @@ public sealed class ApiSmokeTests : IAsyncLifetime
         Assert.NotNull(products);
         Assert.Equal(3, products.TotalCount);
         Assert.Contains(products.Items, product => product.Sku == "BOOK-001");
+    }
+
+    [Fact]
+    public async Task TenantFilterKeepsBrandCatalogsSeparate()
+    {
+        var client = _client ?? throw new InvalidOperationException("The test client was not initialized.");
+        var tenants = await client.GetFromJsonAsync<IReadOnlyList<TenantDto>>("/api/auth/tenants");
+        Assert.NotNull(tenants);
+        Assert.Contains(tenants, tenant => tenant.Code == "minishop");
+        Assert.Contains(tenants, tenant => tenant.Code == "novamart");
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            TenantCode = "novamart",
+            Email = "admin@novamart.local",
+            Password = "Admin@12345"
+        });
+        loginResponse.EnsureSuccessStatusCode();
+        var login = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(login);
+        Assert.Equal("NovaMart", login.User.TenantName);
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+        var products = await client.GetFromJsonAsync<PagedResult<ProductDto>>(
+            "/api/products?page=1&pageSize=10");
+
+        Assert.NotNull(products);
+        Assert.Equal(2, products.TotalCount);
+        Assert.All(products.Items, product => Assert.StartsWith("NOVA-", product.Sku));
+        Assert.DoesNotContain(products.Items, product => product.Sku == "BOOK-001");
     }
 
     public async Task DisposeAsync()

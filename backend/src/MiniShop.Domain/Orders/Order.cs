@@ -2,15 +2,17 @@ using MiniShop.Domain.Shared;
 
 namespace MiniShop.Domain;
 
-public sealed class Order
+public sealed class Order : IMultiTenant
 {
     public long Id { get; set; }
+    public long TenantId { get; set; }
     public long CustomerId { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public DateTime OrderDateUtc { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
     public decimal TotalAmount { get; set; }
 
+    public Tenant Tenant { get; set; } = null!;
     public Customer Customer { get; set; } = null!;
     public ICollection<OrderItem> Items { get; set; } = [];
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MiniShop.EntityFrameworkCore;
 
@@ -10,9 +11,11 @@ using MiniShop.EntityFrameworkCore;
 namespace MiniShop.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(MiniShopDbContext))]
-    partial class MiniShopDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905092256_AddMultiTenancy")]
+    partial class AddMultiTenancy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

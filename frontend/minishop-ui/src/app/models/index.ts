@@ -9,3 +9,4 @@ export * from './order-summary';
 export * from './paged-result';
 export * from './product';
 export * from './save-order';
+export * from './tenant';

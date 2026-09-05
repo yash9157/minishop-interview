@@ -17,22 +17,28 @@ Oracle's provider is used because its stable 10.x release supports EF Core 10. P
 
 ## Business model
 
-The application has five business tables. Identity adds its own framework tables.
+The application has six business tables. Identity adds its own framework tables. `Tenant` represents a brand, and the remaining five tables contain tenant-owned data.
 
-All five business tables use `long` primary and foreign keys, which map to MySQL `bigint`. Identity user and role keys remain `Guid`. Pagination, stock, and order quantities remain `int` because those values have much smaller practical limits.
+All business tables use `long` primary and foreign keys, which map to MySQL `bigint`. Identity user and role keys remain `Guid`. Pagination, stock, and order quantities remain `int` because those values have much smaller practical limits.
 
 ```mermaid
 erDiagram
+  TENANT ||--o{ CATEGORY : owns
+  TENANT ||--o{ PRODUCT : owns
+  TENANT ||--o{ CUSTOMER : owns
+  TENANT ||--o{ ORDER : owns
+  TENANT ||--o{ ORDER_ITEM : owns
   CATEGORY ||--o{ PRODUCT : contains
   CUSTOMER ||--o{ ORDER : places
   ORDER ||--|{ ORDER_ITEM : contains
   PRODUCT ||--o{ ORDER_ITEM : references
 ```
 
-- `Categories`: unique name.
-- `Products`: category FK, unique SKU, price, stock, active flag.
-- `Customers`: unique email.
-- `Orders`: customer FK, unique order number, status, server-calculated total.
+- `Tenants`: unique code, brand name, and active state.
+- `Categories`: tenant-specific unique name.
+- `Products`: category FK, tenant-specific unique SKU, price, stock, active flag.
+- `Customers`: tenant-specific unique email.
+- `Orders`: customer FK, tenant-specific unique order number, status, server-calculated total.
 - `OrderItems`: order/product FKs, quantity, captured unit price, unique order/product pair.
 
 Parent deletion is restricted when a category, customer, or product is referenced. Deleting an order cascades to its owned items.
@@ -43,10 +49,12 @@ Parent deletion is restricted when a category, customer, or product is reference
 backend/src/
   MiniShop.Domain.Shared/
     Authorization/Roles.cs
+    MultiTenancy/IMultiTenant.cs
     Orders/OrderStatus.cs
     Validation/ValidationConstants.cs
   MiniShop.Domain/
     Users/ApplicationUser.cs
+    Tenants/Tenant.cs
     Categories/Category.cs
     Products/Product.cs
     Customers/Customer.cs
@@ -98,7 +106,7 @@ frontend/minishop-ui/src/environments/
   environment.local.ts          local development API URL
 ```
 
-`Application.Contracts` contains DTOs only. Each application-service interface is kept beside its implementation in the matching `Application` feature folder; there is no generic `Abstractions` folder. Controllers depend on these interfaces, while the implementations inject the concrete `MiniShopDbContext`. The project still avoids repository and Unit of Work wrappers. `Application` contains LINQ filtering, projections, navigation loading, validation and CRUD orchestration. `EntityFrameworkCore` contains the DbContext, mappings, migrations, Identity setup and seed data.
+`Application.Contracts` contains DTOs only. Each application-service interface is kept beside its implementation in the matching `Application` feature folder; there is no generic `Abstractions` folder. Controllers depend on these interfaces, while the implementations inject the concrete `MiniShopDbContext`. The project still avoids repository and Unit of Work wrappers. `Application` contains LINQ filtering, projections, navigation loading, validation and CRUD orchestration. `EntityFrameworkCore` contains the DbContext, mappings, migrations, Identity setup and seed data. The five tenant-owned entities implement only `IMultiTenant`; `MiniShopDbContext` reads the signed `tenant_id` claim directly and automatically applies a fail-closed global query filter to every implementing entity.
 
 Dependency flow:
 
@@ -186,7 +194,7 @@ docker compose up -d
 docker compose ps
 ```
 
-The committed migrations are applied and demo data is seeded when the API starts. `InitialCreate` creates the schema and `UseLongBusinessKeys` upgrades all business primary and foreign keys to MySQL `bigint`:
+The committed migrations are applied and demo data is seeded when the API starts. `InitialCreate` creates the schema, `UseLongBusinessKeys` upgrades business keys to MySQL `bigint`, and `AddMultiTenancy` creates the brands, backfills existing data to MiniShop, and adds tenant filters/indexes:
 
 ```powershell
 dotnet run --project backend/src/MiniShop.HttpApi --launch-profile http
@@ -210,7 +218,12 @@ PrimeNG 22 uses the PrimeUI license model. Request a Community key for eligible 
 Development Admin:
 
 ```text
+Brand: MiniShop
 Email: admin@minishop.local
+Password: Admin@12345
+
+Brand: NovaMart
+Email: admin@novamart.local
 Password: Admin@12345
 ```
 
@@ -220,6 +233,7 @@ Registering through the UI creates a `User`. A User can browse the catalog but c
 
 | Method | Route | Access |
 |---|---|---|
+| GET | `/api/auth/tenants` | Anonymous |
 | POST | `/api/auth/register` | Anonymous |
 | POST | `/api/auth/login` | Anonymous |
 | GET | `/api/auth/me` | Authenticated |
@@ -230,7 +244,7 @@ Registering through the UI creates a `User`. A User can browse the catalog but c
 | All CRUD | `/api/customers` | Admin |
 | All CRUD | `/api/orders` | Admin |
 
-The JWT validates signature, issuer, audience, and lifetime. It contains subject, name, email, role, JTI, issued-at, and expiry claims. Angular stores it in `sessionStorage`, attaches it with a functional interceptor, and clears it on logout or a 401 response. API authorization—not the Angular guard—is the security boundary.
+The JWT validates signature, issuer, audience, and lifetime. It contains subject, name, email, role, `tenant_id`, `tenant_name`, JTI, issued-at, and expiry claims. Angular stores it in `sessionStorage`, attaches it with a functional interceptor, and clears it on logout or a 401 response. The DbContext uses the signed tenant claim for automatic read isolation and validates tenant ownership during writes. API authorization—not the Angular guard—is the security boundary.
 
 ## Migrations
 
@@ -266,7 +280,7 @@ The UI production build uses lazy-loaded feature routes to keep PrimeNG page cod
 ```powershell
 $login = Invoke-RestMethod -Method Post -Uri "http://localhost:5080/api/auth/login" `
   -ContentType "application/json" `
-  -Body (@{ email="admin@minishop.local"; password="Admin@12345" } | ConvertTo-Json)
+  -Body (@{ tenantCode="minishop"; email="admin@minishop.local"; password="Admin@12345" } | ConvertTo-Json)
 
 $headers = @{ Authorization = "Bearer $($login.accessToken)" }
 Invoke-RestMethod -Uri "http://localhost:5080/api/products?page=1&pageSize=10&search=mouse" -Headers $headers
@@ -320,6 +334,7 @@ dotnet ef migrations list --project backend/src/MiniShop.EntityFrameworkCore --s
 - [ ] Backend build and tests pass.
 - [ ] Angular tests and production build pass.
 - [ ] Admin login works and Swagger accepts the JWT.
+- [ ] MiniShop and NovaMart logins show different isolated catalogs.
 - [ ] User reads succeed; User writes return 403.
 - [ ] Product paging/search works.
 - [ ] Category, Product, Customer, and Order CRUD work.

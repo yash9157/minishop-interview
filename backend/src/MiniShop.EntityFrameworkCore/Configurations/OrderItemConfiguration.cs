@@ -12,8 +12,12 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.HasKey(item => item.Id);
         builder.Ignore(item => item.LineTotal);
         builder.Property(item => item.UnitPrice).HasPrecision(18, 2);
-        builder.HasIndex(item => new { item.OrderId, item.ProductId }).IsUnique();
-        builder.HasIndex(item => item.ProductId);
+        builder.HasIndex(item => new { item.TenantId, item.OrderId, item.ProductId }).IsUnique();
+        builder.HasIndex(item => new { item.TenantId, item.ProductId });
+        builder.HasOne(item => item.Tenant)
+            .WithMany(tenant => tenant.OrderItems)
+            .HasForeignKey(item => item.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(item => item.Order)
             .WithMany(order => order.Items)
             .HasForeignKey(item => item.OrderId)

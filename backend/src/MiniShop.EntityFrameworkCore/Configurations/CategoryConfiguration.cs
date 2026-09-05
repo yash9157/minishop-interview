@@ -16,6 +16,10 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .IsRequired();
         builder.Property(category => category.Description)
             .HasMaxLength(ValidationConstants.DescriptionMaxLength);
-        builder.HasIndex(category => category.Name).IsUnique();
+        builder.HasIndex(category => new { category.TenantId, category.Name }).IsUnique();
+        builder.HasOne(category => category.Tenant)
+            .WithMany(tenant => tenant.Categories)
+            .HasForeignKey(category => category.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

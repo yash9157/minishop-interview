@@ -5,6 +5,9 @@ namespace MiniShop.Application.Contracts;
 
 public sealed class RegisterRequest
 {
+    [Required]
+    public string TenantCode { get; init; } = string.Empty;
+
     [Required, StringLength(ValidationConstants.NameMaxLength)]
     public string FullName { get; init; } = string.Empty;
 

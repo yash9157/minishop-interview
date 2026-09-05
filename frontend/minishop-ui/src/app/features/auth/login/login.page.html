@@ -5,6 +5,17 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
       <div class="field">
+        <label for="tenantCode">Brand</label>
+        <p-select
+          inputId="tenantCode"
+          formControlName="tenantCode"
+          [options]="tenants()"
+          optionLabel="name"
+          optionValue="code"
+        />
+      </div>
+
+      <div class="field">
         <label for="email">Email address</label>
         <input id="email" pInputText formControlName="email" autocomplete="email" />
       </div>

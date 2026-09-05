@@ -18,8 +18,12 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(ValidationConstants.NameMaxLength)
             .IsRequired();
         builder.Property(product => product.Price).HasPrecision(18, 2);
-        builder.HasIndex(product => product.Sku).IsUnique();
-        builder.HasIndex(product => new { product.CategoryId, product.Name });
+        builder.HasIndex(product => new { product.TenantId, product.Sku }).IsUnique();
+        builder.HasIndex(product => new { product.TenantId, product.CategoryId, product.Name });
+        builder.HasOne(product => product.Tenant)
+            .WithMany(tenant => tenant.Products)
+            .HasForeignKey(product => product.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(product => product.Category)
             .WithMany(category => category.Products)
             .HasForeignKey(product => product.CategoryId)

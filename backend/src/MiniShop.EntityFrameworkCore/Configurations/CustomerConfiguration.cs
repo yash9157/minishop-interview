@@ -19,6 +19,10 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .IsRequired();
         builder.Property(customer => customer.Phone)
             .HasMaxLength(ValidationConstants.PhoneMaxLength);
-        builder.HasIndex(customer => customer.Email).IsUnique();
+        builder.HasIndex(customer => new { customer.TenantId, customer.Email }).IsUnique();
+        builder.HasOne(customer => customer.Tenant)
+            .WithMany(tenant => tenant.Customers)
+            .HasForeignKey(customer => customer.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

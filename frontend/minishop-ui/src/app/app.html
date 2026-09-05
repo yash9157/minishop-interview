@@ -5,8 +5,8 @@
   <div class="shell">
     <aside [class.open]="menuOpen">
       <div class="brand">
-        <span class="mark">M</span>
-        <span>MiniShop<small>Operations</small></span>
+        <span class="mark">{{ auth.user()?.tenantName?.charAt(0) }}</span>
+        <span>{{ auth.user()?.tenantName }}<small>Operations</small></span>
       </div>
 
       <nav>
@@ -41,7 +41,7 @@
         <span class="avatar">{{ auth.user()?.fullName?.charAt(0) }}</span>
         <div>
           <strong>{{ auth.user()?.fullName }}</strong>
-          <small>{{ auth.user()?.roles?.[0] }}</small>
+          <small>{{ auth.user()?.tenantName }} · {{ auth.user()?.roles?.[0] }}</small>
         </div>
         <button type="button" aria-label="Sign out" (click)="auth.logout()">
           <i class="pi pi-sign-out"></i>

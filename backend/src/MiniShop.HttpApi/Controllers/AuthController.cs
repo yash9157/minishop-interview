@@ -12,6 +12,11 @@ namespace MiniShop.HttpApi.Controllers;
 public sealed class AuthController(IAuthAppService authAppService) : ControllerBase
 {
     [AllowAnonymous]
+    [HttpGet("tenants")]
+    public Task<IReadOnlyList<TenantDto>> GetTenants(CancellationToken cancellationToken) =>
+        authAppService.GetTenantsAsync(cancellationToken);
+
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(
         RegisterRequest request,

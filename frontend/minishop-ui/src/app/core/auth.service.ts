@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs';
-import { AuthResponse } from '../models';
+import { AuthResponse, Tenant } from '../models';
 
 import { API_BASE_URL } from './api.constants';
 
@@ -18,13 +18,17 @@ export class AuthService {
   readonly token = computed(() => this.state()?.accessToken ?? null);
   readonly isAdmin = computed(() => this.user()?.roles.includes('Admin') ?? false);
 
-  login(value: { email: string; password: string }) {
+  getTenants() {
+    return this.http.get<Tenant[]>(`${AUTH_URL}/tenants`);
+  }
+
+  login(value: { tenantCode: string; email: string; password: string }) {
     return this.http
       .post<AuthResponse>(`${AUTH_URL}/login`, value)
       .pipe(tap((response) => this.save(response)));
   }
 
-  register(value: { fullName: string; email: string; password: string }) {
+  register(value: { tenantCode: string; fullName: string; email: string; password: string }) {
     return this.http
       .post<AuthResponse>(`${AUTH_URL}/register`, value)
       .pipe(tap((response) => this.save(response)));

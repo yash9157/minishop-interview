@@ -13,6 +13,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("ConnectionStrings:Default is missing.");
 
+        services.AddHttpContextAccessor();
         services.AddDbContext<MiniShopDbContext>(options => options.UseMySQL(connectionString));
         services
             .AddIdentityCore<ApplicationUser>(options =>
