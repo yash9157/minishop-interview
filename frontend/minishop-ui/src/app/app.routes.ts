@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard } from './core/auth.guards';
+import { adminGuard, approverGuard, authGuard, provisionerGuard } from './core/auth.guards';
 
 export const routes: Routes = [
   {
@@ -27,13 +27,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/requests/requests.page').then((x) => x.RequestsPage),
   },
   {
+    path: 'audit',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./features/audit/audit.page').then((x) => x.AuditPage),
+  },
+  {
     path: 'approvals',
-    canActivate: [authGuard],
+    canActivate: [authGuard, approverGuard],
     loadComponent: () => import('./features/approvals/approvals.page').then((x) => x.ApprovalsPage),
   },
   {
     path: 'provisioning',
-    canActivate: [authGuard],
+    canActivate: [authGuard, provisionerGuard],
     loadComponent: () => import('./features/provisioning/provisioning.page').then((x) => x.ProvisioningPage),
   },
   { path: '', pathMatch: 'full', redirectTo: 'login' },

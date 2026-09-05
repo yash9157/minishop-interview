@@ -9,21 +9,24 @@ namespace MiniShop.HttpApi.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/access-requests")]
-public sealed class AccessRequestsController(AccessRequestAppService service) : ControllerBase
+public sealed class AccessRequestsController(IAccessRequestAppService service) : ControllerBase
 {
     [HttpGet("mine")]
-    public Task<AccessRequestDto[]> Mine(CancellationToken cancellationToken) =>
-        service.GetMineAsync(User.GetUserId(), cancellationToken);
+    public Task<PagedResult<AccessRequestDto>> Mine(
+        [FromQuery] PagedRequest page, CancellationToken cancellationToken) =>
+        service.GetMineAsync(User.GetUserId(), page, cancellationToken);
 
     [HttpGet("pending-approvals")]
-    public Task<AccessRequestDto[]> Pending(CancellationToken cancellationToken) =>
-        service.GetPendingAsync(User.GetUserId(), cancellationToken);
+    public Task<PagedResult<AccessRequestDto>> Pending(
+        [FromQuery] PagedRequest page, CancellationToken cancellationToken) =>
+        service.GetPendingAsync(User.GetUserId(), page, cancellationToken);
 
     [Authorize(Roles = Roles.Admin + "," + Roles.Provisioner)]
     [HttpGet]
-    public Task<AccessRequestDto[]> All(
-        [FromQuery] AccessRequestStatus? status, CancellationToken cancellationToken) =>
-        service.GetAllAsync(status, cancellationToken);
+    public Task<PagedResult<AccessRequestDto>> All(
+        [FromQuery] AccessRequestStatus? status, [FromQuery] PagedRequest page,
+        CancellationToken cancellationToken) =>
+        service.GetAllAsync(status, page, cancellationToken);
 
     [HttpPost]
     public async Task<ActionResult<AccessRequestDto>> Create(

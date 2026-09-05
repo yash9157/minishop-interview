@@ -1,11 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ConfirmationService } from 'primeng/api';
 import { AccessApiService } from '../../core/access-api.service';
 import { Permission, Role } from '../../models';
 
 @Component({ selector: 'app-roles', imports: [ReactiveFormsModule], templateUrl: './roles.page.html' })
 export class RolesPage implements OnInit {
   private readonly api = inject(AccessApiService);
+  private readonly confirmation = inject(ConfirmationService);
   readonly roles = signal<Role[]>([]);
   readonly permissions = signal<Permission[]>([]);
   readonly form = new FormGroup({
@@ -16,6 +18,16 @@ export class RolesPage implements OnInit {
     code: new FormControl('', { nonNullable: true, validators: Validators.required }),
     name: new FormControl('', { nonNullable: true, validators: Validators.required }),
   });
+  readonly roleEditForm = new FormGroup({
+    name: new FormControl('', { nonNullable: true, validators: Validators.required }),
+    isRequestable: new FormControl(true, { nonNullable: true }),
+  });
+  readonly permissionEditForm = new FormGroup({
+    code: new FormControl('', { nonNullable: true, validators: Validators.required }),
+    name: new FormControl('', { nonNullable: true, validators: Validators.required }),
+  });
+  readonly editingRoleId = signal<string | null>(null);
+  readonly editingPermissionId = signal<number | null>(null);
   selected: Record<string, number[]> = {};
   ngOnInit(): void { this.load(); }
   load(): void {
@@ -37,13 +49,22 @@ export class RolesPage implements OnInit {
     this.api.setRolePermissions(role.id, this.selected[role.id] ?? []).subscribe(() => this.load());
   }
   edit(role: Role): void {
-    const name = prompt('Role name', role.name)?.trim();
-    if (name) this.api.updateRole(role.id, { name, isRequestable: role.isRequestable })
-      .subscribe(() => this.load());
+    this.editingRoleId.set(role.id);
+    this.roleEditForm.setValue({ name: role.name, isRequestable: role.isRequestable });
+  }
+  saveRoleEdit(): void {
+    const id = this.editingRoleId();
+    if (!id || this.roleEditForm.invalid) return;
+    this.api.updateRole(id, this.roleEditForm.getRawValue()).subscribe(() => {
+      this.editingRoleId.set(null);
+      this.load();
+    });
   }
   remove(role: Role): void {
-    if (confirm(`Delete ${role.name}?`))
-      this.api.deleteRole(role.id).subscribe(() => this.load());
+    this.confirmation.confirm({
+      message: `Delete ${role.name}?`, header: 'Confirm role deletion',
+      accept: () => this.api.deleteRole(role.id).subscribe(() => this.load()),
+    });
   }
   createPermission(): void {
     if (this.permissionForm.invalid) return;
@@ -53,12 +74,21 @@ export class RolesPage implements OnInit {
     });
   }
   editPermission(permission: Permission): void {
-    const name = prompt('Permission name', permission.name)?.trim();
-    if (name) this.api.updatePermission(permission.id, { code: permission.code, name })
-      .subscribe(() => this.load());
+    this.editingPermissionId.set(permission.id);
+    this.permissionEditForm.setValue({ code: permission.code, name: permission.name });
+  }
+  savePermissionEdit(): void {
+    const id = this.editingPermissionId();
+    if (!id || this.permissionEditForm.invalid) return;
+    this.api.updatePermission(id, this.permissionEditForm.getRawValue()).subscribe(() => {
+      this.editingPermissionId.set(null);
+      this.load();
+    });
   }
   removePermission(permission: Permission): void {
-    if (confirm(`Delete ${permission.code}?`))
-      this.api.deletePermission(permission.id).subscribe(() => this.load());
+    this.confirmation.confirm({
+      message: `Delete ${permission.code}?`, header: 'Confirm permission deletion',
+      accept: () => this.api.deletePermission(permission.id).subscribe(() => this.load()),
+    });
   }
 }

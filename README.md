@@ -1,81 +1,159 @@
-# Mini Access Management Portal
+# Access Management Portal
 
-Interview project implementing JWT authentication, users, roles, permissions,
-access requests, two-level approval, provisioning and audit logging.
+Interview project built with ASP.NET Core 10, Angular 22, PrimeNG 22, EF Core,
+ASP.NET Core Identity, JWT and MySQL 8.4.
 
-## Stack
+The portal supports user administration, multiple roles, effective permissions,
+access requests, ordered two-level approval, provisioning, audit history and a
+dashboard. Business table keys use `long`; Identity user and role keys use GUIDs.
 
-- ASP.NET Core 10 Web API, Identity, EF Core and MySQL 8.4
-- Angular 22 and PrimeNG
-- Layered backend with DTO validation, pagination and global exception handling
+## Project structure
 
-## Run locally
+```text
+backend/src
+  MiniShop.Domain.Shared          enums, role names and validation constants
+  MiniShop.Domain                 one entity class per file
+  MiniShop.Application.Contracts DTOs, requests and paging contracts
+  MiniShop.Application           interfaces, business rules and EF queries
+  MiniShop.EntityFrameworkCore   DbContext, entity mappings, migrations and seed
+  MiniShop.HttpApi               controllers, JWT, Swagger, CORS and middleware
+frontend/minishop-ui             Angular standalone application
+database                         MySQL and SQL Server interview scripts
+```
 
-Requirements: .NET SDK 10, Node.js/npm and Docker.
+`EntityFrameworkCore` contains no repositories or business services. Controllers
+depend on application-service interfaces. The application layer performs the EF
+queries directly to keep this interview solution explicit and easy to follow.
 
-```bash
-export MYSQL_ROOT_PASSWORD="<choose-a-password>"
-export MYSQL_PASSWORD="<choose-a-password>"
+## Prerequisites
+
+- .NET SDK 10
+- Node.js 24 or another Angular 22-supported Node.js release
+- Docker Desktop
+
+Check the tools in PowerShell:
+
+```powershell
+dotnet --version
+node --version
+npm --version
+docker --version
+```
+
+## First-time local setup
+
+1. Create the Docker environment file without committing passwords:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+2. Start MySQL:
+
+```powershell
 docker compose up -d
-export ConnectionStrings__Default="Server=localhost;Port=3308;Database=access_management;User=minishop;Password=<MYSQL_PASSWORD>"
-export Jwt__SigningKey="<at-least-32-random-characters>"
-export DemoPassword="<strong-demo-password>"
+docker compose ps
+```
+
+3. Store API configuration in .NET user-secrets. Use the same app password that
+   you placed in `.env` and choose a random signing key of at least 32 characters.
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3308;Database=access_management;User=minishop;Password=YOUR_APP_PASSWORD" --project backend/src/MiniShop.HttpApi
+dotnet user-secrets set "Jwt:SigningKey" "YOUR_RANDOM_SIGNING_KEY_AT_LEAST_32_CHARACTERS" --project backend/src/MiniShop.HttpApi
+dotnet user-secrets set "DemoPassword" "Demo@12345" --project backend/src/MiniShop.HttpApi
+```
+
+Do not use or commit credentials copied from the interview screenshots.
+
+4. Restore and run the API. Startup applies EF migrations and idempotently seeds
+   demo roles, users, permissions and target systems.
+
+```powershell
+dotnet tool restore
+dotnet restore MiniShop.sln
 dotnet run --project backend/src/MiniShop.HttpApi
 ```
 
-In another terminal:
+Swagger opens at `http://localhost:5080/swagger`.
 
-```bash
-cd frontend/minishop-ui
+5. In a second PowerShell window, run Angular:
+
+```powershell
+Set-Location frontend/minishop-ui
 npm ci
 npm start
 ```
 
-Open Angular at `http://localhost:4200`. Swagger is available at the API URL
-shown by `dotnet run`.
+Open `http://localhost:4200`. Local Angular configuration reads the API address
+from `src/environments/environment.local.ts`. Production reads
+`src/environments/environment.ts` and defaults to the same host at `/api`.
 
-## Demo accounts
+## Demo users
 
-| User | Password | Purpose |
-|---|---|---|
-| admin@access.local | `DemoPassword` value | Admin and provisioning |
-| manager@access.local | `DemoPassword` value | Level 1 approval |
-| security@access.local | `DemoPassword` value | Level 2 approval |
-| employee@access.local | `DemoPassword` value | Submit requests |
+All demo users use the `DemoPassword` user-secret value.
 
-No passwords or signing keys are stored in source control.
+| Account | Purpose |
+|---|---|
+| `employee@access.local` | Create and submit a request |
+| `manager@access.local` | Level 1 approval |
+| `security@access.local` | Level 2 approval |
+| `admin@access.local` | User/role administration and provisioning |
 
-## Workflow
+## Demonstration flow
 
-1. Employee saves a draft with a target system, role and justification.
-2. Submission creates manager approval followed by Security/Admin approval.
-3. Approvers act in order; rejection closes the request.
-4. Final approval makes the request ready for provisioning.
-5. Provisioning assigns the role and records the actor and UTC time.
-6. Maker and Checker cannot be assigned to the same user.
+1. Sign in as the employee, save a draft and submit it.
+2. Sign in as the manager and record the level 1 decision.
+3. Sign in as the security approver and record the level 2 decision.
+4. Sign in as the admin and provision the approved request.
+5. Open Users to see the assigned role and effective permissions.
+6. Open Audit Trail to show the actor, action, entity, time and old/new values.
 
-Users are soft deleted. Identity's `AspNetUserRoles` composite primary key
-prevents duplicate role assignments.
+The API prevents duplicate user-role mappings through Identity's composite key,
+blocks the Maker/Checker conflict in business logic, and uses database transactions
+for multi-step user and workflow operations. Only the current approval level can be
+decided. Users are deactivated with a soft delete so historical requests and audit
+records remain intact.
 
-## SQL assignment
+`POST /api/users` also requires an `Idempotency-Key` header. The unique
+`(Operation, Key)` database index lets a timed-out client safely retry and receive
+the user created by the first request instead of creating a second user or audit event.
 
-- `database/task1_access_management_mysql.sql`: schema, 3 users, 3 roles,
-  4 permissions, required queries and indexes.
-- `database/task2_mssql.sql`: all T-SQL questions, revoke procedure and index.
+## EF Core migrations
 
-## Validate
+The initial migration is committed. To create a future migration:
 
-```bash
-dotnet test MiniShop.sln
-cd frontend/minishop-ui && npm run build
+```powershell
+$env:ConnectionStrings__Default = "Server=localhost;Port=3308;Database=access_management;User=minishop;Password=YOUR_APP_PASSWORD"
+$env:Jwt__SigningKey = "YOUR_RANDOM_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
+$env:DemoPassword = "Demo@12345"
+dotnet ef migrations add YourMigrationName --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi --output-dir Migrations
+dotnet ef database update --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi
 ```
 
-The integration test uses a disposable MySQL Testcontainers database.
+## Build verification
+
+```powershell
+dotnet build MiniShop.sln
+Set-Location frontend/minishop-ui
+npm ci
+npm run build
+```
+
+The SQL answers are in:
+
+- `database/task1_access_management_mysql.sql`
+- `database/task2_mssql.sql`
 
 ## Assumptions and trade-offs
 
-- Identity provides password hashing, users and multi-role mapping.
-- Portal roles and requestable roles share one role table to keep the solution small.
-- MySQL runs the app; Task 2 is SQL Server T-SQL as requested.
-- Refresh tokens are omitted because they are optional.
-- `EnsureCreated` keeps setup minimal; a complete SQL schema is included.
+- Identity owns secure password hashing and framework user/role tables.
+- Portal roles and requested business roles share the role table to keep the model
+  small enough for an interview exercise.
+- MySQL is the application database. The supplied SQL Server questions are answered
+  separately in T-SQL.
+- JWT access tokens expire after 60 minutes and are stored in session storage.
+- Refresh tokens are omitted because the assignment marks them as optional.
+- Provisioning is represented by assigning the approved role. A production system
+  would normally call an external target-system connector and use an outbox.

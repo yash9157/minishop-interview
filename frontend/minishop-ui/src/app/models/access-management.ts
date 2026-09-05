@@ -44,6 +44,8 @@ export interface AuditLog {
   entity: string;
   entityId: string;
   timestampUtc: string;
+  oldValue?: string;
+  newValue?: string;
 }
 export interface Dashboard {
   pendingApprovals: number;

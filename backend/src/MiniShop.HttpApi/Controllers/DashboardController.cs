@@ -8,7 +8,7 @@ namespace MiniShop.HttpApi.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/dashboard")]
-public sealed class DashboardController(DashboardAppService service) : ControllerBase
+public sealed class DashboardController(IDashboardAppService service) : ControllerBase
 {
     [HttpGet]
     public Task<DashboardDto> Get(CancellationToken cancellationToken) =>

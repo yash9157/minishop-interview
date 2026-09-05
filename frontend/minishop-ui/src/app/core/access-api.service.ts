@@ -14,7 +14,9 @@ export class AccessApiService {
     return this.http.get<PagedResult<User>>(`${API_BASE_URL}/users?page=1&pageSize=100`);
   }
   createUser(value: { fullName: string; email: string; password: string; managerId?: string | null }) {
-    return this.http.post<User>(`${API_BASE_URL}/users`, value);
+    return this.http.post<User>(`${API_BASE_URL}/users`, value, {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    });
   }
   updateUser(id: string, value: { fullName: string; managerId?: string | null; isActive: boolean }) {
     return this.http.put<User>(`${API_BASE_URL}/users/${id}`, value);
@@ -24,6 +26,9 @@ export class AccessApiService {
   }
   assignRole(userId: string, roleId: string) {
     return this.http.post<void>(`${API_BASE_URL}/users/${userId}/roles`, { roleId });
+  }
+  removeRole(userId: string, roleId: string) {
+    return this.http.delete<void>(`${API_BASE_URL}/users/${userId}/roles/${roleId}`);
   }
   effectivePermissions(userId: string) {
     return this.http.get<string[]>(`${API_BASE_URL}/users/${userId}/permissions`);
@@ -59,14 +64,24 @@ export class AccessApiService {
     return this.http.get<TargetSystem[]>(`${API_BASE_URL}/target-systems`);
   }
   myRequests() {
-    return this.http.get<AccessRequest[]>(`${API_BASE_URL}/access-requests/mine`);
+    return this.http.get<PagedResult<AccessRequest>>(
+      `${API_BASE_URL}/access-requests/mine?page=1&pageSize=100`);
   }
   pendingApprovals() {
-    return this.http.get<AccessRequest[]>(`${API_BASE_URL}/access-requests/pending-approvals`);
+    return this.http.get<PagedResult<AccessRequest>>(
+      `${API_BASE_URL}/access-requests/pending-approvals?page=1&pageSize=100`);
   }
   requests(status?: string) {
     const params = status ? new HttpParams().set('status', status) : undefined;
-    return this.http.get<AccessRequest[]>(`${API_BASE_URL}/access-requests`, { params });
+    const paging = (params ?? new HttpParams()).set('page', 1).set('pageSize', 100);
+    return this.http.get<PagedResult<AccessRequest>>(`${API_BASE_URL}/access-requests`, {
+      params: paging,
+    });
+  }
+  auditLogs(page = 1, pageSize = 20) {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http.get<PagedResult<import('../models').AuditLog>>(
+      `${API_BASE_URL}/audit-logs`, { params });
   }
   createRequest(value: { targetSystemId: number; requestedRoleId: string; businessJustification: string }) {
     return this.http.post<AccessRequest>(`${API_BASE_URL}/access-requests`, value);

@@ -27,7 +27,7 @@ export class RequestsPage implements OnInit {
     this.api.roles().subscribe((x) => this.roles.set(x.filter((role) => role.isRequestable)));
     this.load();
   }
-  load(): void { this.api.myRequests().subscribe((x) => this.requests.set(x)); }
+  load(): void { this.api.myRequests().subscribe((x) => this.requests.set(x.items)); }
   create(): void {
     if (this.form.invalid) return;
     this.api.createRequest(this.form.getRawValue()).subscribe({

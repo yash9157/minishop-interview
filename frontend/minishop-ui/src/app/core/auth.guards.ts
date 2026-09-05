@@ -7,3 +7,9 @@ export const authGuard: CanActivateFn = () =>
 
 export const adminGuard: CanActivateFn = () =>
   inject(AuthService).isAdmin() ? true : inject(Router).parseUrl('/dashboard');
+
+export const approverGuard: CanActivateFn = () =>
+  inject(AuthService).canApprove() ? true : inject(Router).parseUrl('/dashboard');
+
+export const provisionerGuard: CanActivateFn = () =>
+  inject(AuthService).canProvision() ? true : inject(Router).parseUrl('/dashboard');

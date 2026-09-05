@@ -9,7 +9,7 @@ namespace MiniShop.HttpApi.Controllers;
 [ApiController]
 [Authorize(Roles = Roles.Admin)]
 [Route("api/users")]
-public sealed class UsersController(UserRoleAppService service) : ControllerBase
+public sealed class UsersController(IUserRoleAppService service) : ControllerBase
 {
     [HttpGet]
     public Task<PagedResult<UserDto>> Get(
@@ -18,9 +18,12 @@ public sealed class UsersController(UserRoleAppService service) : ControllerBase
 
     [HttpPost]
     public async Task<ActionResult<UserDto>> Create(
-        CreateUserRequest request, CancellationToken cancellationToken) =>
+        CreateUserRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string idempotencyKey,
+        CancellationToken cancellationToken) =>
         StatusCode(StatusCodes.Status201Created,
-            await service.CreateUserAsync(request, User.GetUserId(), cancellationToken));
+            await service.CreateUserAsync(
+                request, idempotencyKey, User.GetUserId(), cancellationToken));
 
     [HttpPut("{id:guid}")]
     public Task<UserDto> Update(
@@ -39,6 +42,14 @@ public sealed class UsersController(UserRoleAppService service) : ControllerBase
         Guid id, AssignRoleRequest request, CancellationToken cancellationToken)
     {
         await service.AssignRoleAsync(id, request.RoleId, User.GetUserId(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/roles/{roleId:guid}")]
+    public async Task<IActionResult> RemoveRole(
+        Guid id, Guid roleId, CancellationToken cancellationToken)
+    {
+        await service.RemoveRoleAsync(id, roleId, User.GetUserId(), cancellationToken);
         return NoContent();
     }
 

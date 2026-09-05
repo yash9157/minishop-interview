@@ -41,9 +41,7 @@ p {
   line-height: 1.5;
 }
 
-.page-head,
-.toolbar-actions,
-.actions {
+.page-head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -54,9 +52,6 @@ p {
 }
 .page-head p {
   margin: 0.35rem 0 0;
-}
-.toolbar-spacing {
-  margin-bottom: 1rem;
 }
 .section-head {
   margin-top: 1.75rem;
@@ -125,6 +120,7 @@ button {
 button.primary { color: #fff; border-color: var(--primary); background: var(--primary); }
 button.danger { color: #b91c1c; }
 button:disabled { cursor: not-allowed; opacity: 0.55; }
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
 
 .form-grid {
   display: grid;
@@ -146,18 +142,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 .full {
   grid-column: 1 / -1;
-}
-.actions {
-  justify-content: flex-end;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
-}
-.preview-total {
-  margin-right: auto;
-}
-.actions-column {
-  width: 110px;
 }
 .w-full {
   width: 100%;
@@ -187,12 +171,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .auth-form .p-inputtext {
   width: 100%;
 }
-.auth-switch {
-  margin: 1.25rem 0;
-  color: var(--muted);
-  font-size: 0.84rem;
-  text-align: center;
-}
 .error-message {
   display: flex;
   align-items: center;
@@ -210,25 +188,13 @@ button:focus-visible {
   outline: 3px solid rgb(99 102 241 / 28%);
   outline-offset: 2px;
 }
-.p-inputtext,
-.p-select,
-.p-inputnumber,
-.p-datepicker {
+.p-inputtext {
   max-width: 100%;
-}
-.p-dialog {
-  max-width: calc(100vw - 2rem);
-}
-.p-datatable-table {
-  min-width: 680px;
 }
 
 @media (max-width: 800px) {
   .page-head {
     align-items: flex-start;
-  }
-  .toolbar-actions {
-    flex-wrap: wrap;
   }
 }
 
@@ -238,18 +204,5 @@ button:focus-visible {
   }
   .page-head {
     flex-direction: column;
-  }
-  .toolbar-actions {
-    width: 100%;
-  }
-  .toolbar-actions > .p-inputtext {
-    flex: 1 1 180px;
-  }
-  .actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .preview-total {
-    margin: 0 0 0.5rem;
   }
 }

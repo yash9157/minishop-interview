@@ -9,7 +9,7 @@ namespace MiniShop.HttpApi.Controllers;
 [ApiController]
 [Authorize]
 [Route("api")]
-public sealed class RolesController(UserRoleAppService service) : ControllerBase
+public sealed class RolesController(IUserRoleAppService service) : ControllerBase
 {
     [HttpGet("roles")]
     public Task<RoleDto[]> Roles(CancellationToken cancellationToken) =>

@@ -14,6 +14,7 @@ public sealed class MiniShopDbContext(DbContextOptions<MiniShopDbContext> option
     public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
     public DbSet<ApprovalHistory> ApprovalHistory => Set<ApprovalHistory>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -12,7 +12,6 @@ public sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Appl
         builder.Property(user => user.FullName)
             .HasMaxLength(ValidationConstants.NameMaxLength)
             .IsRequired();
-        builder.HasQueryFilter(user => !user.IsDeleted);
         builder.HasOne(user => user.Manager)
             .WithMany(user => user.DirectReports)
             .HasForeignKey(user => user.ManagerId)

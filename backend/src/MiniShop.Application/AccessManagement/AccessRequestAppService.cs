@@ -10,38 +10,35 @@ namespace MiniShop.Application;
 public sealed class AccessRequestAppService(
     MiniShopDbContext db,
     UserManager<ApplicationUser> users,
-    AuditWriter audit)
+    IAuditWriter audit) : IAccessRequestAppService
 {
-    public async Task<AccessRequestDto[]> GetMineAsync(
-        Guid userId, CancellationToken cancellationToken) =>
-        await Query().Where(x => x.RequesterId == userId)
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .Select(MapExpression()).ToArrayAsync(cancellationToken);
+    public Task<PagedResult<AccessRequestDto>> GetMineAsync(
+        Guid userId, PagedRequest page, CancellationToken cancellationToken) =>
+        GetPageAsync(Query().Where(x => x.RequesterId == userId), page, cancellationToken);
 
-    public async Task<AccessRequestDto[]> GetPendingAsync(
-        Guid approverId, CancellationToken cancellationToken) =>
-        await Query()
+    public Task<PagedResult<AccessRequestDto>> GetPendingAsync(
+        Guid approverId, PagedRequest page, CancellationToken cancellationToken) =>
+        GetPageAsync(Query()
             .Where(x => x.Status == AccessRequestStatus.Pending &&
                 x.Approvals.Any(a => a.ApproverId == approverId &&
                     a.Decision == ApprovalDecision.Pending &&
                     !x.Approvals.Any(previous =>
-                        previous.Level < a.Level && previous.Decision != ApprovalDecision.Approved)))
-            .OrderBy(x => x.CreatedAtUtc)
-            .Select(MapExpression()).ToArrayAsync(cancellationToken);
+                        previous.Level < a.Level && previous.Decision != ApprovalDecision.Approved))),
+            page, cancellationToken);
 
-    public async Task<AccessRequestDto[]> GetAllAsync(
-        AccessRequestStatus? status, CancellationToken cancellationToken)
+    public Task<PagedResult<AccessRequestDto>> GetAllAsync(
+        AccessRequestStatus? status, PagedRequest page, CancellationToken cancellationToken)
     {
         var query = Query();
         if (status.HasValue)
             query = query.Where(x => x.Status == status);
-        return await query.OrderByDescending(x => x.CreatedAtUtc)
-            .Select(MapExpression()).ToArrayAsync(cancellationToken);
+        return GetPageAsync(query, page, cancellationToken);
     }
 
     public async Task<AccessRequestDto> CreateAsync(
         CreateAccessRequest request, Guid userId, CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         if (!await db.TargetSystems.AnyAsync(
                 x => x.Id == request.TargetSystemId && x.IsActive, cancellationToken))
             throw new BusinessException("Target system does not exist.");
@@ -60,12 +57,14 @@ public sealed class AccessRequestAppService(
         await db.SaveChangesAsync(cancellationToken);
         audit.Add(userId, "Create", "AccessRequest", entity.Id, newValue: entity.Status);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return await GetAsync(entity.Id, cancellationToken);
     }
 
     public async Task<AccessRequestDto> SubmitAsync(
         long id, Guid userId, CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var request = await db.AccessRequests
             .Include(x => x.Requester)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
@@ -101,6 +100,7 @@ public sealed class AccessRequestAppService(
         audit.Add(userId, "Submit", "AccessRequest", id, AccessRequestStatus.Draft,
             AccessRequestStatus.Pending);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
 
@@ -115,6 +115,7 @@ public sealed class AccessRequestAppService(
     public async Task<AccessRequestDto> ProvisionAsync(
         long id, Guid actorId, CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var request = await db.AccessRequests
             .Include(x => x.Requester)
             .Include(x => x.RequestedRole)
@@ -141,6 +142,7 @@ public sealed class AccessRequestAppService(
         audit.Add(actorId, "Provision", "AccessRequest", id,
             AccessRequestStatus.Approved, AccessRequestStatus.Provisioned);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
 
@@ -148,6 +150,7 @@ public sealed class AccessRequestAppService(
         long id, Guid approverId, ApprovalDecision decision, string? remarks,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var request = await db.AccessRequests.Include(x => x.Approvals)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException("Access request was not found.");
@@ -171,6 +174,7 @@ public sealed class AccessRequestAppService(
         audit.Add(approverId, decision.ToString(), "AccessRequest", id,
             newValue: new { next.Level, next.Remarks });
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
 
@@ -179,6 +183,25 @@ public sealed class AccessRequestAppService(
             .FirstAsync(cancellationToken);
 
     private IQueryable<AccessRequest> Query() => db.AccessRequests.AsNoTracking();
+
+    private static async Task<PagedResult<AccessRequestDto>> GetPageAsync(
+        IQueryable<AccessRequest> query, PagedRequest page, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(page.Search))
+        {
+            var search = page.Search.Trim();
+            query = query.Where(x => x.Requester.FullName.Contains(search) ||
+                x.TargetSystem.Name.Contains(search) || x.RequestedRole.Name!.Contains(search));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.OrderByDescending(x => x.CreatedAtUtc)
+            .Skip((page.Page - 1) * page.PageSize)
+            .Take(page.PageSize)
+            .Select(MapExpression())
+            .ToArrayAsync(cancellationToken);
+        return new PagedResult<AccessRequestDto>(items, totalCount, page.Page, page.PageSize);
+    }
 
     private static System.Linq.Expressions.Expression<Func<AccessRequest, AccessRequestDto>>
         MapExpression() => x => new AccessRequestDto(

@@ -11,12 +11,13 @@ public sealed class UserRoleAppService(
     MiniShopDbContext db,
     UserManager<ApplicationUser> users,
     RoleManager<ApplicationRole> roles,
-    AuditWriter audit)
+    IAuditWriter audit) : IUserRoleAppService
 {
     public async Task<PagedResult<UserDto>> GetUsersAsync(
         PagedRequest request, CancellationToken cancellationToken)
     {
-        var query = db.Users.AsNoTracking().Include(x => x.Manager).AsQueryable();
+        var query = db.Users.AsNoTracking().Include(x => x.Manager)
+            .Where(x => !x.IsDeleted);
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim();
@@ -27,15 +28,35 @@ public sealed class UserRoleAppService(
         var page = await query.OrderBy(x => x.FullName)
             .Skip((request.Page - 1) * request.PageSize).Take(request.PageSize)
             .ToListAsync(cancellationToken);
-        var items = new List<UserDto>();
-        foreach (var user in page)
-            items.Add(await MapUserAsync(user));
+        var userIds = page.Select(x => x.Id).ToArray();
+        var assignedRoles = await (
+                from userRole in db.UserRoles
+                join role in db.Roles on userRole.RoleId equals role.Id
+                where userIds.Contains(userRole.UserId)
+                select new { userRole.UserId, Role = role.Name! })
+            .ToListAsync(cancellationToken);
+        var rolesByUser = assignedRoles.ToLookup(x => x.UserId, x => x.Role);
+        var items = page.Select(user => new UserDto(
+            user.Id, user.FullName, user.Email!, user.ManagerId, user.Manager?.FullName,
+            user.IsActive, rolesByUser[user.Id].OrderBy(x => x).ToArray())).ToArray();
         return new PagedResult<UserDto>(items, total, request.Page, request.PageSize);
     }
 
     public async Task<UserDto> CreateUserAsync(
-        CreateUserRequest request, Guid actorId, CancellationToken cancellationToken)
+        CreateUserRequest request, string idempotencyKey, Guid actorId,
+        CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Length > 100)
+            throw new BusinessException("A valid Idempotency-Key header is required.");
+
+        const string operation = "CreateUser";
+        var previous = await db.IdempotencyRecords.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Operation == operation && x.Key == idempotencyKey,
+                cancellationToken);
+        if (previous is not null && Guid.TryParse(previous.ResourceId, out var previousUserId))
+            return await MapUserAsync(await FindUserAsync(previousUserId));
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var email = request.Email.Trim().ToLowerInvariant();
         if (await users.FindByEmailAsync(email) is not null)
             throw new ConflictException("Email already exists.");
@@ -52,8 +73,15 @@ public sealed class UserRoleAppService(
         };
         EnsureSucceeded(await users.CreateAsync(user, request.Password));
         EnsureSucceeded(await users.AddToRoleAsync(user, Roles.Employee));
+        db.IdempotencyRecords.Add(new IdempotencyRecord
+        {
+            Key = idempotencyKey,
+            Operation = operation,
+            ResourceId = user.Id.ToString()
+        });
         audit.Add(actorId, "Create", "User", user.Id, newValue: new { user.FullName, user.Email });
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return await MapUserAsync(user);
     }
 
@@ -88,6 +116,7 @@ public sealed class UserRoleAppService(
     public async Task AssignRoleAsync(
         Guid userId, Guid roleId, Guid actorId, CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var user = await FindUserAsync(userId);
         var role = await roles.FindByIdAsync(roleId.ToString())
             ?? throw new NotFoundException("Role was not found.");
@@ -97,6 +126,22 @@ public sealed class UserRoleAppService(
         EnsureSucceeded(await users.AddToRoleAsync(user, role.Name!));
         audit.Add(actorId, "AssignRole", "UserRole", userId, newValue: role.Name);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task RemoveRoleAsync(
+        Guid userId, Guid roleId, Guid actorId, CancellationToken cancellationToken)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var user = await FindUserAsync(userId);
+        var role = await roles.FindByIdAsync(roleId.ToString())
+            ?? throw new NotFoundException("Role was not found.");
+        if (!await users.IsInRoleAsync(user, role.Name!))
+            throw new NotFoundException("The role is not assigned to this user.");
+        EnsureSucceeded(await users.RemoveFromRoleAsync(user, role.Name!));
+        audit.Add(actorId, "RemoveRole", "UserRole", userId, role.Name);
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task<string[]> GetEffectivePermissionsAsync(
@@ -143,8 +188,12 @@ public sealed class UserRoleAppService(
     {
         var entity = await db.Permissions.FindAsync([id], cancellationToken)
             ?? throw new NotFoundException("Permission was not found.");
+        var code = request.Code.Trim().ToUpperInvariant();
+        if (await db.Permissions.AnyAsync(
+                x => x.Id != id && x.Code == code, cancellationToken))
+            throw new ConflictException("Permission code already exists.");
         var oldValue = new { entity.Code, entity.Name };
-        entity.Code = request.Code.Trim().ToUpperInvariant();
+        entity.Code = code;
         entity.Name = request.Name.Trim();
         audit.Add(actorId, "Update", "Permission", id, oldValue,
             new { entity.Code, entity.Name });
@@ -229,9 +278,13 @@ public sealed class UserRoleAppService(
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<ApplicationUser> FindUserAsync(Guid id) =>
-        await users.FindByIdAsync(id.ToString())
-        ?? throw new NotFoundException("User was not found.");
+    private async Task<ApplicationUser> FindUserAsync(Guid id)
+    {
+        var user = await users.FindByIdAsync(id.ToString());
+        if (user is null || user.IsDeleted)
+            throw new NotFoundException("User was not found.");
+        return user;
+    }
 
     private async Task ValidateManagerAsync(Guid? managerId, CancellationToken cancellationToken)
     {
