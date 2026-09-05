@@ -7,4 +7,5 @@ export interface Product {
   price: number;
   stockQuantity: number;
   isActive: boolean;
+  hasImage: boolean;
 }

@@ -21,4 +21,22 @@ describe('ProductService', () => {
     request.flush({ items: [], totalCount: 0, page: 2, pageSize: 25 });
     http.verify();
   });
+
+  it('uploads an image as multipart form data', () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(ProductService);
+    const http = TestBed.inject(HttpTestingController);
+    const file = new File(['image'], 'product.webp', { type: 'image/webp' });
+
+    service.uploadImage(42, file).subscribe();
+
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/api/products/42/image'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeInstanceOf(FormData);
+    expect((request.request.body as FormData).get('file')).toBe(file);
+    request.flush(null);
+    http.verify();
+  });
 });

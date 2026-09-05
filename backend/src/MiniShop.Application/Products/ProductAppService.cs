@@ -47,7 +47,8 @@ public sealed class ProductAppService(MiniShopDbContext dbContext) : IProductApp
                 product.Name,
                 product.Price,
                 product.StockQuantity,
-                product.IsActive))
+                product.IsActive,
+                product.ImagePath != null))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<ProductDto>(
@@ -153,5 +154,6 @@ public sealed class ProductAppService(MiniShopDbContext dbContext) : IProductApp
             product.Name,
             product.Price,
             product.StockQuantity,
-            product.IsActive);
+            product.IsActive,
+            product.ImagePath != null);
 }

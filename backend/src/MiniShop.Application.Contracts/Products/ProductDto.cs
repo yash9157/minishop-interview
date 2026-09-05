@@ -8,4 +8,5 @@ public sealed record ProductDto(
     string Name,
     decimal Price,
     int StockQuantity,
-    bool IsActive);
+    bool IsActive,
+    bool HasImage);

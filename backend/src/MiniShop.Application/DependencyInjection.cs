@@ -8,6 +8,7 @@ public static class DependencyInjection
         .AddScoped<IAuthAppService, AuthAppService>()
         .AddScoped<ICategoryAppService, CategoryAppService>()
         .AddScoped<IProductAppService, ProductAppService>()
+        .AddScoped<IProductImageAppService, ProductImageAppService>()
         .AddScoped<ICustomerAppService, CustomerAppService>()
         .AddScoped<IOrderAppService, OrderAppService>();
 }

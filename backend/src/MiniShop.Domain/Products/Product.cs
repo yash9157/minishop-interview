@@ -12,6 +12,7 @@ public sealed class Product : IMultiTenant
     public decimal Price { get; set; }
     public int StockQuantity { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? ImagePath { get; set; }
 
     public Tenant Tenant { get; set; } = null!;
     public Category Category { get; set; } = null!;

@@ -429,6 +429,252 @@ In `angular.json`, add this to the `build.configurations.development` object:
 
 `npm start` uses `environment.local.ts`, so API calls go to `http://localhost:5080/api`. `npm run build` uses `environment.ts`. Restart `npm start` after changing an environment file.
 
+## Build the minimal Angular UI and CSS step by step
+
+The UI intentionally has only two CSS files:
+
+- `frontend/minishop-ui/src/styles.css` contains global variables, reusable page/form classes, and a few PrimeNG sizing rules.
+- `frontend/minishop-ui/src/app/app.css` contains only the authenticated sidebar shell.
+
+Feature components use `--inline-style` when generated, so they do not create empty `.css` files. Add a feature CSS file only when that page has a real style that cannot be reused.
+
+### 1. Enable the PrimeNG theme
+
+In `src/app/app.config.ts`, register the Aura preset and animations:
+
+```typescript
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
+
+providers: [
+  provideAnimationsAsync(),
+  providePrimeNG({
+    license: primeUiLicense,
+    theme: {
+      preset: Aura,
+      options: { darkModeSelector: false },
+    },
+  }),
+]
+```
+
+Keep `"styles": ["src/styles.css"]` in the Angular build options. Import PrimeIcons once at the top of `src/styles.css`:
+
+```css
+@import 'primeicons/primeicons.css';
+```
+
+Do not recreate PrimeNG buttons, tables, dialogs, selects, or inputs with custom CSS. Import the required PrimeNG module in the standalone page and use the component directly.
+
+### 2. Add the global design values and base elements
+
+Start `src/styles.css` with only the colors used by the application and a small reset:
+
+```css
+:root {
+  color-scheme: light;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --primary: #4f46e5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #f8fafc;
+  font-family: Inter, 'Segoe UI', Arial, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+```
+
+These are element rules, so the HTML does not need classes such as `app-text`, `custom-font`, or `page-background`.
+
+### 3. Add only reusable layout classes
+
+The actual templates reuse the following small set:
+
+| Class | Real use |
+|---|---|
+| `page-head` | Page title plus the page action/search area |
+| `toolbar-actions` | Groups search and action buttons |
+| `panel` | White content container around tables/forms |
+| `form-grid` | Two-column order/product forms |
+| `field` | Label, control, and help text stack |
+| `full` | Makes one field span both form columns |
+| `muted` | Secondary explanatory text |
+| `actions` and `preview-total` | Order form footer and calculated preview |
+| `auth-page`, `auth-card`, `auth-form`, `auth-switch` | Login and registration only |
+| `product-image-preview` | Constrains the real uploaded image preview |
+
+Example reusable rules:
+
+```css
+.page-head,
+.toolbar-actions,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-head {
+  justify-content: space-between;
+  margin-bottom: 1.4rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.panel {
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+```
+
+Use those classes directly in a feature template:
+
+```html
+<div class="page-head">
+  <div>
+    <h1>Products</h1>
+    <p class="muted">Manage pricing and availability</p>
+  </div>
+  <div class="toolbar-actions">
+    <input pInputText placeholder="Search" />
+    <p-button label="New product" icon="pi pi-plus" />
+  </div>
+</div>
+
+<div class="panel">
+  <p-table><!-- table templates --></p-table>
+</div>
+```
+
+`pi` and `pi-*` are PrimeIcons classes, while `p-button`, `p-dialog`, `p-select`, and similar classes are created by PrimeNG. They are external framework classes, not unused application classes.
+
+### 4. Keep shell styles with the root component
+
+`src/app/app.html` owns the sidebar, content area, mobile menu button, and backdrop. Therefore their rules stay in `src/app/app.css`, where Angular scopes them to the root component:
+
+```css
+.shell {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.shell aside {
+  position: fixed;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  min-height: 100vh;
+  padding: 1.5rem 1rem;
+  color: #e0e7ff;
+  background: #1e1b4b;
+}
+
+.content {
+  min-height: 100vh;
+  margin-left: 250px;
+}
+
+.content main {
+  max-width: 1280px;
+  margin: auto;
+  padding: 2rem;
+}
+```
+
+The `[class.open]="menuOpen"` binding in `app.html` is not unused: the mobile media query uses `.shell aside.open` to display the sidebar. The `active` class is also real because `routerLinkActive="active"` applies it to the current navigation link.
+
+### 5. Add one mobile breakpoint
+
+The form and page header collapse in global CSS, while the sidebar behavior remains in `app.css`:
+
+```css
+/* src/styles.css */
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-head,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+```
+
+```css
+/* src/app/app.css */
+@media (max-width: 760px) {
+  .shell aside {
+    transform: translateX(-100%);
+  }
+
+  .shell aside.open {
+    transform: none;
+  }
+
+  .content {
+    margin-left: 0;
+  }
+
+  .menu,
+  .close-menu {
+    display: grid;
+  }
+
+  .menu-backdrop {
+    display: block;
+  }
+}
+```
+
+Use the complete current `styles.css` and `app.css` as the source of truth when recreating the repository; the snippets above explain the order and reason for each section.
+
+### 6. Check for unused CSS before the interview
+
+From the repository root, list application class attributes and custom selectors:
+
+```powershell
+rg -n 'class="|\[class\.' frontend/minishop-ui/src/app -g '*.html'
+rg -n '^\.[a-zA-Z]' frontend/minishop-ui/src/styles.css frontend/minishop-ui/src/app/app.css
+```
+
+For every custom selector, find either a static `class="..."`, an Angular class binding such as `[class.open]`, or `routerLinkActive`. Remove a selector only after checking those dynamic cases. Do not remove PrimeNG or PrimeIcons selectors merely because they are absent from your own templates; those elements are rendered by the library at runtime.
+
 ## Run from zero
 
 Start MySQL. Port `3308` is intentionally used to avoid common local MySQL conflicts.
@@ -485,10 +731,225 @@ Registering through the UI creates a `User`. A User can browse the catalog but c
 | POST/PUT/DELETE | `/api/categories` | Admin |
 | GET | `/api/products` | Authenticated |
 | POST/PUT/DELETE | `/api/products` | Admin |
+| GET | `/api/products/{productId}/image` | Authenticated |
+| POST/DELETE | `/api/products/{productId}/image` | Admin |
 | All CRUD | `/api/customers` | Admin |
 | All CRUD | `/api/orders` | Admin |
 
 The JWT validates signature, issuer, audience, and lifetime. It contains subject, name, email, role, `tenant_id`, `tenant_name`, JTI, issued-at, and expiry claims. Angular stores it in `sessionStorage`, attaches it with a functional interceptor, and clears it on logout or a 401 response. The DbContext uses the signed tenant claim for automatic read isolation and validates tenant ownership during writes. API authorization—not the Angular guard—is the security boundary.
+
+## Product image upload and download
+
+MiniShop implements product image upload without adding another business table. It keeps only the relative file path in `Products`; it does not store image bytes in MySQL. The Products page has one image action that opens a minimal upload, preview, replace, and remove dialog.
+
+### Request flow
+
+```text
+Angular file input
+  -> FormData with field name "file"
+  -> POST /api/products/{productId}/image with JWT
+  -> ProductImagesController calls IProductImageAppService
+  -> Application validates tenant product, type, extension and size
+  -> Application generates a safe unique filename and writes the file
+  -> Product.ImagePath stores products/<generated-name>.webp
+  -> GET /api/products/{productId}/image returns the file
+```
+
+The product lookup still passes through the DbContext tenant query filter. A user from one tenant must receive `404`, not another tenant's image. The filename sent by the browser is never trusted or reused as the stored filename.
+
+### Backend changes
+
+The implementation adds one nullable property to `backend/src/MiniShop.Domain/Products/Product.cs`:
+
+```csharp
+public string? ImagePath { get; set; }
+```
+
+Add its maximum length in `ProductConfiguration.Configure`:
+
+```csharp
+builder.Property(product => product.ImagePath).HasMaxLength(300);
+```
+
+The controller depends on the interface in `backend/src/MiniShop.Application/Products/IProductImageAppService.cs`:
+
+```csharp
+using Microsoft.AspNetCore.Http;
+
+namespace MiniShop.Application;
+
+public interface IProductImageAppService
+{
+    Task UploadAsync(long productId, IFormFile file, CancellationToken cancellationToken);
+    Task<ProductImageResult> GetAsync(long productId, CancellationToken cancellationToken);
+    Task DeleteAsync(long productId, CancellationToken cancellationToken);
+}
+
+public sealed record ProductImageResult(string FullPath, string ContentType);
+```
+
+`ProductImageAppService` is in `MiniShop.Application/Products`, beside the other product logic. Its three methods do the following:
+
+1. Query `dbContext.Products.SingleOrDefaultAsync(product => product.Id == productId)`. The global filter automatically limits the query to the current tenant.
+2. For upload, reject an empty file, a file larger than 5 MB, and anything except `.jpg`, `.jpeg`, `.png`, or `.webp`. Browser image content types are checked; generic `application/octet-stream` is accepted so PowerShell uploads work.
+3. Create `uploads/products` below the API content root if it does not exist.
+4. Generate the stored name with `Guid.NewGuid().ToString("N") + extension`. Never combine a client filename directly into a path.
+5. Copy with `await using var stream = File.Create(fullPath); await file.CopyToAsync(stream, cancellationToken);`.
+6. Store only `products/<generated-name>` in `Product.ImagePath` and call `SaveChangesAsync`.
+7. For get, ensure `ImagePath` exists, resolve it below the known upload root, and return its path and content type.
+8. For replacement, save the new image first, update the database, and then remove the old file. For delete, clear `ImagePath`, save the database change, and then remove the file if present.
+
+Register it in `MiniShop.Application/DependencyInjection.cs`:
+
+```csharp
+services.AddScoped<IProductImageAppService, ProductImageAppService>();
+```
+
+The controller remains small in `backend/src/MiniShop.HttpApi/Controllers/ProductImagesController.cs`:
+
+```csharp
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MiniShop.Application;
+using MiniShop.Domain.Shared;
+
+namespace MiniShop.HttpApi.Controllers;
+
+[ApiController]
+[Route("api/products/{productId:long}/image")]
+[Authorize]
+public sealed class ProductImagesController(IProductImageAppService imageAppService) : ControllerBase
+{
+    [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> Upload(
+        long productId,
+        [FromForm] IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        await imageAppService.UploadAsync(productId, file, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Get(long productId, CancellationToken cancellationToken)
+    {
+        var image = await imageAppService.GetAsync(productId, cancellationToken);
+        return PhysicalFile(image.FullPath, image.ContentType, enableRangeProcessing: true);
+    }
+
+    [HttpDelete]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> Delete(long productId, CancellationToken cancellationToken)
+    {
+        await imageAppService.DeleteAsync(productId, cancellationToken);
+        return NoContent();
+    }
+}
+```
+
+Because `IFormFile` is an ASP.NET type, `MiniShop.Application.csproj` contains this framework reference:
+
+```xml
+<ItemGroup>
+  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+</ItemGroup>
+```
+
+The included `AddProductImage` migration was created with these commands:
+
+```powershell
+dotnet ef migrations add AddProductImage `
+  --project backend/src/MiniShop.EntityFrameworkCore `
+  --startup-project backend/src/MiniShop.HttpApi `
+  --output-dir Migrations
+
+dotnet ef database update `
+  --project backend/src/MiniShop.EntityFrameworkCore `
+  --startup-project backend/src/MiniShop.HttpApi
+```
+
+### Angular upload and get calls
+
+Add these methods to the product data service. Do not manually set the `Content-Type` header for `FormData`; the browser must add its multipart boundary.
+
+```typescript
+uploadImage(productId: number, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return this.http.post<void>(
+    `${environment.apiBaseUrl}/api/products/${productId}/image`,
+    formData
+  );
+}
+
+getImage(productId: number) {
+  return this.http.get(
+    `${environment.apiBaseUrl}/api/products/${productId}/image`,
+    { responseType: 'blob' }
+  );
+}
+
+deleteImage(productId: number) {
+  return this.http.delete<void>(
+    `${environment.apiBaseUrl}/api/products/${productId}/image`
+  );
+}
+```
+
+The Products page uses a native file input for the minimal interview UI:
+
+```html
+<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectImage($event)" />
+<p-button label="Upload" (onClick)="uploadImage()" [disabled]="!selectedImage" />
+```
+
+```typescript
+selectedImage?: File;
+imageUrl?: string;
+
+selectImage(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  this.selectedImage = input.files?.[0];
+}
+
+loadImage(productId: number): void {
+  this.productService.getImage(productId).subscribe(blob => {
+    if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
+    this.imageUrl = URL.createObjectURL(blob);
+  });
+}
+```
+
+The existing JWT interceptor automatically adds the bearer token to upload, get, and delete requests. Revoke the object URL when replacing the image or destroying the component to avoid a browser memory leak.
+
+### PowerShell verification
+
+PowerShell 7 can send multipart form data directly:
+
+```powershell
+$headers = @{ Authorization = "Bearer $($login.accessToken)" }
+
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5080/api/products/1/image" `
+  -Headers $headers `
+  -Form @{ file = Get-Item "C:\Temp\product.webp" }
+
+Invoke-WebRequest `
+  -Uri "http://localhost:5080/api/products/1/image" `
+  -Headers $headers `
+  -OutFile "C:\Temp\downloaded-product.webp"
+
+Invoke-RestMethod -Method Delete `
+  -Uri "http://localhost:5080/api/products/1/image" `
+  -Headers $headers
+```
+
+Expected responses are `204` for upload/delete, `200` for get, `400` for an empty or unsupported file, `404` for a missing or other-tenant product, and `413` when the complete multipart request exceeds the API request limit.
+
+For production, use Azure Blob Storage, Amazon S3, or another object store instead of the API disk. Add malware scanning, file-signature validation, image re-encoding, private signed URLs where required, retention cleanup, and a persistent Docker volume for any local-disk deployment. The database should continue to store only the object key and metadata.
 
 ## Migrations
 
@@ -584,3 +1045,4 @@ dotnet ef migrations list --project backend/src/MiniShop.EntityFrameworkCore --s
 - [ ] Category, Product, Customer, and Order CRUD work.
 - [ ] Order detail returns customer, items, and products.
 - [ ] Duplicate order products and excessive quantities are rejected.
+- [ ] An Admin can upload, preview, replace, and remove a product image.

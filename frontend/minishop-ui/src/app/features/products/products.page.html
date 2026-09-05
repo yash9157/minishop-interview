@@ -41,6 +41,12 @@
         </td>
         <td>
           <p-button icon="pi pi-pencil" [text]="true" (onClick)="open(product)" />
+          <p-button
+            icon="pi pi-image"
+            [text]="true"
+            [ariaLabel]="'Manage image for ' + product.name"
+            (onClick)="openImage(product)"
+          />
           <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(product)" />
         </td>
       </tr>
@@ -85,5 +91,52 @@
   <ng-template #footer>
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
     <p-button label="Save" (onClick)="save()" [disabled]="form.invalid" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Product image"
+  [(visible)]="imageDialogVisible"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  (onHide)="closeImageDialog()"
+>
+  <div class="field">
+    <label for="productImage">Image for {{ imageProduct?.name }}</label>
+    <input
+      id="productImage"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      (change)="selectImage($event)"
+    />
+    <small>JPG, PNG, or WebP. Maximum 5 MB.</small>
+  </div>
+
+  @if (imageUrl) {
+    <img class="product-image-preview" [src]="imageUrl" [alt]="imageProduct?.name ?? 'Product image'" />
+  } @else if (imageLoading) {
+    <p class="muted">Loading image...</p>
+  } @else {
+    <p class="muted">No image uploaded.</p>
+  }
+
+  <ng-template #footer>
+    @if (imageProduct?.hasImage) {
+      <p-button
+        label="Remove"
+        severity="danger"
+        [text]="true"
+        (onClick)="removeImage()"
+        [disabled]="imageLoading"
+      />
+    }
+    <p-button label="Close" severity="secondary" [text]="true" (onClick)="closeImageDialog()" />
+    <p-button
+      label="Upload"
+      icon="pi pi-upload"
+      (onClick)="uploadImage()"
+      [disabled]="!selectedImage || imageLoading"
+      [loading]="imageLoading"
+    />
   </ng-template>
 </p-dialog>

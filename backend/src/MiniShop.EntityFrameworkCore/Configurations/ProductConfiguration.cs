@@ -18,6 +18,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(ValidationConstants.NameMaxLength)
             .IsRequired();
         builder.Property(product => product.Price).HasPrecision(18, 2);
+        builder.Property(product => product.ImagePath).HasMaxLength(300);
         builder.HasIndex(product => new { product.TenantId, product.Sku }).IsUnique();
         builder.HasIndex(product => new { product.TenantId, product.CategoryId, product.Name });
         builder.HasOne(product => product.Tenant)

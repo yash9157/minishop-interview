@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -101,6 +102,45 @@ public sealed class ApiSmokeTests : IAsyncLifetime
         Assert.Equal(2, products.TotalCount);
         Assert.All(products.Items, product => Assert.StartsWith("NOVA-", product.Sku));
         Assert.DoesNotContain(products.Items, product => product.Sku == "BOOK-001");
+    }
+
+    [Fact]
+    public async Task AdminCanUploadGetAndDeleteProductImage()
+    {
+        var client = _client ?? throw new InvalidOperationException("The test client was not initialized.");
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        {
+            TenantCode = "minishop",
+            Email = "admin@minishop.local",
+            Password = "Admin@12345"
+        });
+        loginResponse.EnsureSuccessStatusCode();
+        var login = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(login);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+
+        var products = await client.GetFromJsonAsync<PagedResult<ProductDto>>(
+            "/api/products?page=1&pageSize=10");
+        var product = Assert.Single(products!.Items, item => item.Sku == "BOOK-001");
+
+        using var form = new MultipartFormDataContent();
+        using var image = new ByteArrayContent(Encoding.UTF8.GetBytes("demo image bytes"));
+        image.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        form.Add(image, "file", "product.png");
+
+        var uploadResponse = await client.PostAsync($"/api/products/{product.Id}/image", form);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, uploadResponse.StatusCode);
+
+        var getResponse = await client.GetAsync($"/api/products/{product.Id}/image");
+        getResponse.EnsureSuccessStatusCode();
+        Assert.Equal("image/png", getResponse.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("demo image bytes", await getResponse.Content.ReadAsStringAsync());
+
+        var deleteResponse = await client.DeleteAsync($"/api/products/{product.Id}/image");
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.Equal(
+            System.Net.HttpStatusCode.NotFound,
+            (await client.GetAsync($"/api/products/{product.Id}/image")).StatusCode);
     }
 
     public async Task DisposeAsync()

@@ -10,3 +10,5 @@
 *.user
 *.suo
 *.log
+tmp/
+backend/src/MiniShop.HttpApi/uploads/

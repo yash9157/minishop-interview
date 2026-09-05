@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -31,7 +31,7 @@ import { Category, Product } from '../../models';
   ],
   templateUrl: './products.page.html',
 })
-export class ProductsPage implements OnInit {
+export class ProductsPage implements OnInit, OnDestroy {
   private readonly categoryService = inject(CategoryService);
   private readonly productService = inject(ProductService);
   private readonly messageService = inject(MessageService);
@@ -51,13 +51,22 @@ export class ProductsPage implements OnInit {
   });
 
   dialogVisible = false;
+  imageDialogVisible = false;
+  imageLoading = false;
   selectedId?: number;
+  imageProduct?: Product;
+  selectedImage?: File;
+  imageUrl?: string;
   search = '';
   pageNumber = 1;
 
   ngOnInit(): void {
     this.categoryService.getAll().subscribe((categories) => this.categories.set(categories));
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.clearImageUrl();
   }
 
   page(event: { first?: number | null; rows?: number | null }): void {
@@ -112,6 +121,103 @@ export class ProductsPage implements OnInit {
           error: (error) => this.showError('Delete failed', error.error?.detail),
         }),
     });
+  }
+
+  openImage(product: Product): void {
+    this.clearImageUrl();
+    this.imageProduct = product;
+    this.selectedImage = undefined;
+    this.imageDialogVisible = true;
+
+    if (product.hasImage) this.loadImage(product.id);
+  }
+
+  selectImage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      input.value = '';
+      this.selectedImage = undefined;
+      this.showError('Invalid image', 'Use a JPG, PNG, or WebP image up to 5 MB.');
+      return;
+    }
+
+    this.selectedImage = file;
+    this.clearImageUrl();
+    this.imageUrl = URL.createObjectURL(file);
+  }
+
+  uploadImage(): void {
+    if (!this.imageProduct || !this.selectedImage) return;
+
+    this.imageLoading = true;
+    this.productService.uploadImage(this.imageProduct.id, this.selectedImage).subscribe({
+      next: () => {
+        this.imageLoading = false;
+        this.selectedImage = undefined;
+        this.imageProduct = { ...this.imageProduct!, hasImage: true };
+        this.messageService.add({ severity: 'success', summary: 'Product image saved' });
+        this.load();
+        this.loadImage(this.imageProduct.id);
+      },
+      error: (error) => {
+        this.imageLoading = false;
+        this.showError('Upload failed', error.error?.detail);
+      },
+    });
+  }
+
+  removeImage(): void {
+    if (!this.imageProduct) return;
+
+    this.confirmationService.confirm({
+      message: `Remove the image for ${this.imageProduct.name}?`,
+      accept: () => {
+        this.imageLoading = true;
+        this.productService.deleteImage(this.imageProduct!.id).subscribe({
+          next: () => {
+            this.imageLoading = false;
+            this.imageDialogVisible = false;
+            this.clearImageUrl();
+            this.messageService.add({ severity: 'success', summary: 'Product image removed' });
+            this.load();
+          },
+          error: (error) => {
+            this.imageLoading = false;
+            this.showError('Delete failed', error.error?.detail);
+          },
+        });
+      },
+    });
+  }
+
+  closeImageDialog(): void {
+    this.imageDialogVisible = false;
+    this.selectedImage = undefined;
+    this.clearImageUrl();
+  }
+
+  private loadImage(productId: number): void {
+    this.imageLoading = true;
+    this.productService.getImage(productId).subscribe({
+      next: (blob) => {
+        this.clearImageUrl();
+        this.imageUrl = URL.createObjectURL(blob);
+        this.imageLoading = false;
+      },
+      error: (error) => {
+        this.imageLoading = false;
+        this.showError('Image load failed', error.error?.detail);
+      },
+    });
+  }
+
+  private clearImageUrl(): void {
+    if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
+    this.imageUrl = undefined;
   }
 
   private showError(summary: string, detail?: string): void {

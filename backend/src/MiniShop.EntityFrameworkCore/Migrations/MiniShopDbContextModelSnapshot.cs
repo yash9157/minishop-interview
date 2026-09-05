@@ -365,6 +365,10 @@ namespace MiniShop.EntityFrameworkCore.Migrations
                     b.Property<long>("CategoryId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 

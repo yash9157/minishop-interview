@@ -17,7 +17,13 @@ export class ProductService {
     return this.http.get<PagedResult<Product>>(this.url, { params });
   }
 
-  save(value: Omit<Product, 'id' | 'categoryName'>, id?: number) {
+  save(
+    value: Pick<
+      Product,
+      'categoryId' | 'sku' | 'name' | 'price' | 'stockQuantity' | 'isActive'
+    >,
+    id?: number
+  ) {
     return id
       ? this.http.put<Product>(`${this.url}/${id}`, value)
       : this.http.post<Product>(this.url, value);
@@ -25,5 +31,19 @@ export class ProductService {
 
   delete(id: number) {
     return this.http.delete<void>(`${this.url}/${id}`);
+  }
+
+  uploadImage(productId: number, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<void>(`${this.url}/${productId}/image`, formData);
+  }
+
+  getImage(productId: number) {
+    return this.http.get(`${this.url}/${productId}/image`, { responseType: 'blob' });
+  }
+
+  deleteImage(productId: number) {
+    return this.http.delete<void>(`${this.url}/${productId}/image`);
   }
 }
