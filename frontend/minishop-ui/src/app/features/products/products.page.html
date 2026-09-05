@@ -1,0 +1,89 @@
+<div class="page-head">
+  <div>
+    <h1>Products</h1>
+    <p class="muted">Manage pricing and availability</p>
+  </div>
+  <div class="toolbar-actions">
+    <input pInputText [(ngModel)]="search" (keyup.enter)="load()" placeholder="Search" />
+    <p-button label="New product" icon="pi pi-plus" (onClick)="open()" />
+  </div>
+</div>
+
+<div class="panel">
+  <p-table
+    [value]="items()"
+    [loading]="loading()"
+    [paginator]="true"
+    [rows]="10"
+    [totalRecords]="total()"
+    [lazy]="true"
+    (onLazyLoad)="page($event)"
+    [rowHover]="true"
+  >
+    <ng-template #header>
+      <tr>
+        <th>SKU</th><th>Product</th><th>Category</th><th>Price</th>
+        <th>Stock</th><th>Status</th><th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-product>
+      <tr>
+        <td>{{ product.sku }}</td>
+        <td><strong>{{ product.name }}</strong></td>
+        <td>{{ product.categoryName }}</td>
+        <td>{{ product.price | currency: 'USD' }}</td>
+        <td>{{ product.stockQuantity }}</td>
+        <td>
+          <p-tag
+            [value]="product.isActive ? 'Active' : 'Inactive'"
+            [severity]="product.isActive ? 'success' : 'secondary'"
+          />
+        </td>
+        <td>
+          <p-button icon="pi pi-pencil" [text]="true" (onClick)="open(product)" />
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(product)" />
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog header="Product" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '44rem' }">
+  <form [formGroup]="form" class="form-grid">
+    <div class="field">
+      <label for="productCategory">Category</label>
+      <p-select
+        inputId="productCategory"
+        formControlName="categoryId"
+        [options]="categories()"
+        optionLabel="name"
+        optionValue="id"
+      />
+    </div>
+    <div class="field">
+      <label for="productSku">SKU</label>
+      <input id="productSku" pInputText formControlName="sku" />
+    </div>
+    <div class="field full">
+      <label for="productName">Name</label>
+      <input id="productName" pInputText formControlName="name" />
+    </div>
+    <div class="field">
+      <label for="productPrice">Price</label>
+      <p-inputnumber inputId="productPrice" formControlName="price" mode="currency" currency="USD" />
+    </div>
+    <div class="field">
+      <label for="productStock">Stock</label>
+      <p-inputnumber inputId="productStock" formControlName="stockQuantity" [useGrouping]="false" />
+    </div>
+    <div class="field full">
+      <label for="productActive">Active</label>
+      <p-checkbox inputId="productActive" formControlName="isActive" [binary]="true" />
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Save" (onClick)="save()" [disabled]="form.invalid" />
+  </ng-template>
+</p-dialog>

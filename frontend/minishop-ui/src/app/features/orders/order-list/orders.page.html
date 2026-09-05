@@ -1,0 +1,57 @@
+<div class="page-head">
+  <div>
+    <h1>Orders</h1>
+    <p class="muted">Create and track customer orders</p>
+  </div>
+  <p-button label="New order" icon="pi pi-plus" (onClick)="newOrder()" />
+</div>
+
+<div class="panel">
+  <div class="toolbar-actions toolbar-spacing">
+    <input
+      pInputText
+      [(ngModel)]="search"
+      (keyup.enter)="load()"
+      placeholder="Search order or customer"
+    />
+    <p-select
+      [(ngModel)]="status"
+      [options]="statuses"
+      placeholder="All statuses"
+      [showClear]="true"
+      (onChange)="load()"
+    />
+  </div>
+
+  <p-table
+    [value]="items()"
+    [loading]="loading()"
+    [paginator]="true"
+    [rows]="10"
+    [totalRecords]="total()"
+    [lazy]="true"
+    (onLazyLoad)="page($event)"
+    [rowHover]="true"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Order</th><th>Customer</th><th>Date</th><th>Status</th>
+        <th>Items</th><th>Total</th><th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-order>
+      <tr>
+        <td><strong>{{ order.orderNumber }}</strong></td>
+        <td>{{ order.customerName }}</td>
+        <td>{{ order.orderDateUtc | date: 'mediumDate' }}</td>
+        <td><p-tag [value]="order.status" /></td>
+        <td>{{ order.itemCount }}</td>
+        <td>{{ order.totalAmount | currency: 'USD' }}</td>
+        <td>
+          <p-button icon="pi pi-pencil" [text]="true" (onClick)="edit(order.id)" />
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(order)" />
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

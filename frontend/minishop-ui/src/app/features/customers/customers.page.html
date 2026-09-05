@@ -1,0 +1,54 @@
+<div class="page-head">
+  <div>
+    <h1>Customers</h1>
+    <p class="muted">Manage customer records</p>
+  </div>
+  <div class="toolbar-actions">
+    <input pInputText [(ngModel)]="search" (keyup.enter)="load()" placeholder="Search" />
+    <p-button label="New customer" icon="pi pi-plus" (onClick)="open()" />
+  </div>
+</div>
+
+<div class="panel">
+  <p-table
+    [value]="items()"
+    [loading]="loading()"
+    [paginator]="true"
+    [rows]="10"
+    [totalRecords]="total()"
+    [lazy]="true"
+    (onLazyLoad)="page($event)"
+    [rowHover]="true"
+  >
+    <ng-template #header>
+      <tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr>
+    </ng-template>
+    <ng-template #body let-customer>
+      <tr>
+        <td><strong>{{ customer.name }}</strong></td>
+        <td>{{ customer.email }}</td>
+        <td>{{ customer.phone || '—' }}</td>
+        <td>
+          <p-button icon="pi pi-pencil" [text]="true" (onClick)="open(customer)" />
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="remove(customer)" />
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<p-dialog header="Customer" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '36rem' }">
+  <form [formGroup]="form" class="field">
+    <label for="customerName">Name</label>
+    <input id="customerName" pInputText formControlName="name" />
+    <label for="customerEmail">Email</label>
+    <input id="customerEmail" pInputText formControlName="email" />
+    <label for="customerPhone">Phone</label>
+    <input id="customerPhone" pInputText formControlName="phone" />
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="dialogVisible = false" />
+    <p-button label="Save" (onClick)="save()" [disabled]="form.invalid" />
+  </ng-template>
+</p-dialog>

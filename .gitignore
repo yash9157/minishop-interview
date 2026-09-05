@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/TestResults/
+**/node_modules/
+**/dist/
+.angular/
+.playwright-cli/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log

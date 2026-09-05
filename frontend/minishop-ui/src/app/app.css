@@ -1,0 +1,164 @@
+.shell {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+.shell aside {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  padding: 1.5rem 1rem;
+  color: #e0e7ff;
+  background: #1e1b4b;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+.brand {
+  padding: 0 0.65rem;
+}
+.brand small,
+.profile small {
+  display: block;
+  color: #a5b4fc;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.mark,
+.avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #fff;
+  background: #10b981;
+  font-weight: 800;
+}
+.mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.shell nav {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 2.25rem;
+}
+.shell nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+  border-radius: 9px;
+  color: #c7d2fe;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+.shell nav a i {
+  width: 18px;
+  text-align: center;
+}
+.shell nav a:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 8%);
+}
+.shell nav a.active {
+  color: #fff;
+  background: #4338ca;
+}
+.label {
+  margin: 1.3rem 0.85rem 0.35rem;
+  color: #818cf8;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: auto;
+  padding: 1rem 0.65rem 0;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+.profile > div {
+  flex: 1;
+  min-width: 0;
+}
+.profile strong {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile button,
+.menu {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  place-items: center;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.profile button:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.content {
+  min-height: 100vh;
+  margin-left: 250px;
+}
+.content main {
+  max-width: 1280px;
+  margin: auto;
+  padding: 2rem;
+}
+.menu {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .shell aside {
+    transform: translateX(-100%);
+  }
+  .shell aside.open {
+    transform: none;
+    box-shadow: 20px 0 50px rgb(15 23 42 / 18%);
+  }
+  .content {
+    margin-left: 0;
+  }
+  .content main {
+    padding: 4.5rem 1rem 1rem;
+  }
+  .menu {
+    position: fixed;
+    z-index: 10;
+    top: 1rem;
+    left: 1rem;
+    display: grid;
+    border: 1px solid #e2e8f0;
+    color: #312e81;
+    background: #fff;
+  }
+}
