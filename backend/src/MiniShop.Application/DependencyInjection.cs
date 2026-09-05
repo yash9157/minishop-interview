@@ -6,8 +6,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services) => services
         .AddScoped<IJwtTokenService, JwtTokenService>()
         .AddScoped<IAuthAppService, AuthAppService>()
-        .AddScoped<AuditWriter>()
-        .AddScoped<UserRoleAppService>()
-        .AddScoped<AccessRequestAppService>()
-        .AddScoped<DashboardAppService>();
+        .AddScoped<IAuditWriter, AuditWriter>()
+        .AddScoped<IUserRoleAppService, UserRoleAppService>()
+        .AddScoped<IAccessRequestAppService, AccessRequestAppService>()
+        .AddScoped<IAuditLogAppService, AuditLogAppService>()
+        .AddScoped<IDashboardAppService, DashboardAppService>();
 }

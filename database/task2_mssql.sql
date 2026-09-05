@@ -69,3 +69,10 @@ GO
 CREATE INDEX IX_LoginAudit_Employee_LoginTime
 ON LoginAudit(EmployeeId, LoginTime DESC)
 INCLUDE (SuccessFlag);
+
+-- Query 1 can seek by EmployeeId and stop when a recent row is found. Query 3 reads
+-- LoginTime from the same index without looking up the base table. On a large table,
+-- a filtered index below is even smaller for the successful-login query.
+CREATE INDEX IX_LoginAudit_Successful_Employee_LoginTime
+ON LoginAudit(EmployeeId, LoginTime DESC)
+WHERE SuccessFlag = 1;

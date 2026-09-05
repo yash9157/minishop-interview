@@ -10,12 +10,30 @@
   <div class="full"><button class="primary" type="submit" [disabled]="form.invalid">Create user</button></div>
 </form>
 @if (error()) { <p class="error-message">{{ error() }}</p> }
+@if (editingId()) {
+  <form class="panel form-grid section-head" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+    <div class="field"><label>Full name</label><input formControlName="fullName"></div>
+    <div class="field"><label>Manager</label><select formControlName="managerId">
+      <option [ngValue]="null">No manager</option>
+      @for (manager of users(); track manager.id) {
+        @if (manager.id !== editingId()) { <option [value]="manager.id">{{ manager.fullName }}</option> }
+      }
+    </select></div>
+    <label><input type="checkbox" formControlName="isActive"> Active</label>
+    <div class="full">
+      <button class="primary" type="submit" [disabled]="editForm.invalid">Save changes</button>
+      <button type="button" (click)="editingId.set(null)">Cancel</button>
+    </div>
+  </form>
+}
 @if (permissions().length) { <div class="panel section-head"><strong>Effective permissions:</strong> {{ permissions().join(', ') }}</div> }
 <div class="panel section-head table-wrap"><table>
   <thead><tr><th>User</th><th>Manager</th><th>Roles</th><th>Assign role</th><th>Actions</th></tr></thead>
   <tbody>@for (user of users(); track user.id) {
     <tr><td><strong>{{ user.fullName }}</strong><br><small>{{ user.email }}</small></td>
-      <td>{{ user.managerName || '-' }}</td><td>{{ user.roles.join(', ') }}</td>
+      <td>{{ user.managerName || '-' }}</td><td>@for (role of user.roles; track role) {
+        <span class="status">{{ role }} <button type="button" (click)="removeRole(user, role)">×</button></span>
+      }</td>
       <td><select [(value)]="selectedRoles[user.id]" (change)="selectedRoles[user.id] = $any($event.target).value">
         <option value="">Select</option>@for (role of roles(); track role.id) {
           <option [value]="role.id">{{ role.name }}</option>

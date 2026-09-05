@@ -4,6 +4,14 @@
   <div class="field"><label>Permission name</label><input formControlName="name"></div>
   <div class="full"><button class="primary" type="submit">Create permission</button></div>
 </form>
+@if (editingPermissionId()) {
+  <form class="panel form-grid section-head" [formGroup]="permissionEditForm" (ngSubmit)="savePermissionEdit()">
+    <div class="field"><label>Permission code</label><input formControlName="code"></div>
+    <div class="field"><label>Permission name</label><input formControlName="name"></div>
+    <div class="full"><button class="primary" type="submit">Save permission</button>
+      <button type="button" (click)="editingPermissionId.set(null)">Cancel</button></div>
+  </form>
+}
 <div class="panel section-head">
   <strong>Permissions:</strong>
   @for (permission of permissions(); track permission.id) {
@@ -18,6 +26,14 @@
   <label><input type="checkbox" formControlName="isRequestable"> Requestable role</label>
   <div class="full"><button class="primary" type="submit">Create role</button></div>
 </form>
+@if (editingRoleId()) {
+  <form class="panel form-grid section-head" [formGroup]="roleEditForm" (ngSubmit)="saveRoleEdit()">
+    <div class="field"><label>Role name</label><input formControlName="name"></div>
+    <label><input type="checkbox" formControlName="isRequestable"> Requestable role</label>
+    <div class="full"><button class="primary" type="submit">Save role</button>
+      <button type="button" (click)="editingRoleId.set(null)">Cancel</button></div>
+  </form>
+}
 <div class="panel section-head table-wrap"><table>
   <thead><tr><th>Role</th>@for (permission of permissions(); track permission.id) {
     <th title="{{ permission.name }}">{{ permission.code }}</th>}<th></th></tr></thead>

@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,7 @@ namespace MiniShop.IntegrationTests;
 
 public sealed class ApiSmokeTests : IAsyncLifetime
 {
+    private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private readonly string password = $"T!{Guid.NewGuid():N}aA1";
     private readonly MySqlContainer mysql;
     private WebApplicationFactory<Program>? factory;
@@ -40,10 +43,10 @@ public sealed class ApiSmokeTests : IAsyncLifetime
                 TargetSystemId = systems![0].Id,
                 RequestedRoleId = maker.Id,
                 BusinessJustification = "Required for daily transaction work."
-            })).Content.ReadFromJsonAsync<AccessRequestDto>();
+            })).Content.ReadFromJsonAsync<AccessRequestDto>(JsonOptions);
         var submitted = await (await Client.PostAsync(
             $"/api/access-requests/{created!.Id}/submit", null))
-            .Content.ReadFromJsonAsync<AccessRequestDto>();
+            .Content.ReadFromJsonAsync<AccessRequestDto>(JsonOptions);
         Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Pending, submitted!.Status);
 
         await LoginAsync("manager@access.local", password);
@@ -53,14 +56,32 @@ public sealed class ApiSmokeTests : IAsyncLifetime
         var approved = await (await Client.PostAsJsonAsync(
             $"/api/access-requests/{created.Id}/approve",
             new ApprovalActionRequest { Remarks = "Security approved." }))
-            .Content.ReadFromJsonAsync<AccessRequestDto>();
+            .Content.ReadFromJsonAsync<AccessRequestDto>(JsonOptions);
         Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Approved, approved!.Status);
 
         await LoginAsync("admin@access.local", password);
         var provisioned = await (await Client.PostAsync(
             $"/api/access-requests/{created.Id}/provision", null))
-            .Content.ReadFromJsonAsync<AccessRequestDto>();
+            .Content.ReadFromJsonAsync<AccessRequestDto>(JsonOptions);
         Assert.Equal(MiniShop.Domain.Shared.AccessRequestStatus.Provisioned, provisioned!.Status);
+    }
+
+    [Fact]
+    public async Task RetriedUserCreationReturnsTheSameUser()
+    {
+        await LoginAsync("admin@access.local", password);
+        var key = Guid.NewGuid().ToString();
+        var payload = new CreateUserRequest
+        {
+            FullName = "Retry Safe User",
+            Email = $"retry-{Guid.NewGuid():N}@access.local",
+            Password = password
+        };
+
+        var first = await CreateUserAsync(payload, key);
+        var retry = await CreateUserAsync(payload, key);
+
+        Assert.Equal(first.Id, retry.Id);
     }
 
     public async Task InitializeAsync()
@@ -69,6 +90,9 @@ public sealed class ApiSmokeTests : IAsyncLifetime
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.UseSetting("ConnectionStrings:Default", mysql.GetConnectionString());
+            builder.UseSetting("DemoPassword", password);
+            builder.UseSetting("Jwt:SigningKey", password);
             builder.ConfigureAppConfiguration((_, config) =>
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
@@ -95,10 +119,29 @@ public sealed class ApiSmokeTests : IAsyncLifetime
             new AuthenticationHeaderValue("Bearer", login!.AccessToken);
     }
 
+    private async Task<UserDto> CreateUserAsync(CreateUserRequest payload, string key)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/users")
+        {
+            Content = JsonContent.Create(payload)
+        };
+        request.Headers.Add("Idempotency-Key", key);
+        using var response = await Client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<UserDto>(JsonOptions))!;
+    }
+
     public async Task DisposeAsync()
     {
         client?.Dispose();
         if (factory is not null) await factory.DisposeAsync();
         await mysql.DisposeAsync();
+    }
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new JsonStringEnumConverter());
+        return options;
     }
 }

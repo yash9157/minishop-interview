@@ -4,7 +4,7 @@ using MiniShop.EntityFrameworkCore;
 
 namespace MiniShop.Application;
 
-public sealed class AuditWriter(MiniShopDbContext dbContext)
+public sealed class AuditWriter(MiniShopDbContext dbContext) : IAuditWriter
 {
     public void Add(Guid? userId, string action, string entity, object entityId,
         object? oldValue = null, object? newValue = null) =>

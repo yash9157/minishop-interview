@@ -10,7 +10,7 @@ export class ApprovalsPage implements OnInit {
   readonly error = signal('');
   remarks: Record<number, string> = {};
   ngOnInit(): void { this.load(); }
-  load(): void { this.api.pendingApprovals().subscribe((x) => this.requests.set(x)); }
+  load(): void { this.api.pendingApprovals().subscribe((x) => this.requests.set(x.items)); }
   decide(id: number, action: 'approve' | 'reject'): void {
     this.api.decide(id, action, this.remarks[id] ?? '').subscribe({
       next: () => this.load(),

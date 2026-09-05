@@ -14,7 +14,7 @@ public sealed class DatabaseSeeder(
 {
     public async Task SeedAsync()
     {
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
         await SeedRolesAsync();
         await SeedUsersAsync();
         await SeedAccessDataAsync();

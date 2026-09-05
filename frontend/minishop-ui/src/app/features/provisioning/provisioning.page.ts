@@ -8,7 +8,7 @@ export class ProvisioningPage implements OnInit {
   readonly requests = signal<AccessRequest[]>([]);
   readonly error = signal('');
   ngOnInit(): void { this.load(); }
-  load(): void { this.api.requests('Approved').subscribe((x) => this.requests.set(x)); }
+  load(): void { this.api.requests('Approved').subscribe((x) => this.requests.set(x.items)); }
   provision(id: number): void {
     this.api.provision(id).subscribe({ next: () => this.load(),
       error: (e) => this.error.set(e.error?.detail ?? 'Unable to provision access.') });

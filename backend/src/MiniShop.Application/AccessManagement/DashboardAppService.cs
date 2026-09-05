@@ -5,7 +5,7 @@ using MiniShop.EntityFrameworkCore;
 
 namespace MiniShop.Application;
 
-public sealed class DashboardAppService(MiniShopDbContext db)
+public sealed class DashboardAppService(MiniShopDbContext db) : IDashboardAppService
 {
     public async Task<DashboardDto> GetAsync(CancellationToken cancellationToken)
     {
