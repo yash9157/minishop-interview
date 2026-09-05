@@ -1,7 +1,6 @@
-using MiniShop.Application.Contracts;
 using MiniShop.Domain.Shared;
 
-namespace MiniShop.Application;
+namespace MiniShop.Application.Contracts;
 
 public interface IAccessRequestAppService
 {

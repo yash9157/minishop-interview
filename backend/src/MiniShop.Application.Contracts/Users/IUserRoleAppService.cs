@@ -1,6 +1,4 @@
-using MiniShop.Application.Contracts;
-
-namespace MiniShop.Application;
+namespace MiniShop.Application.Contracts;
 
 public interface IUserRoleAppService
 {

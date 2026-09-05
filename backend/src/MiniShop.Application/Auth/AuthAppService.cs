@@ -8,7 +8,7 @@ namespace MiniShop.Application;
 
 public sealed class AuthAppService(
     UserManager<ApplicationUser> userManager,
-    IJwtTokenService jwtTokenService,
+    JwtTokenService jwtTokenService,
     MiniShopDbContext dbContext) : IAuthAppService
 {
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)

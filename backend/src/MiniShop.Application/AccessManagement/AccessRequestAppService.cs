@@ -10,7 +10,7 @@ namespace MiniShop.Application;
 public sealed class AccessRequestAppService(
     MiniShopDbContext db,
     UserManager<ApplicationUser> users,
-    IAuditWriter audit) : IAccessRequestAppService
+    AuditWriter audit) : IAccessRequestAppService
 {
     public Task<PagedResult<AccessRequestDto>> GetMineAsync(
         Guid userId, PagedRequest page, CancellationToken cancellationToken) =>

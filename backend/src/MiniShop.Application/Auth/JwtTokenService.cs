@@ -11,7 +11,7 @@ namespace MiniShop.Application;
 
 public sealed class JwtTokenService(
     UserManager<ApplicationUser> userManager,
-    IOptions<JwtOptions> options) : IJwtTokenService
+    IOptions<JwtOptions> options)
 {
     public async Task<AuthResponse> CreateAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
