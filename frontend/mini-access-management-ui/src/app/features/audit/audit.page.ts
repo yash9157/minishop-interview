@@ -14,7 +14,9 @@ export class AuditPage implements OnInit {
   readonly totalCount = signal(0);
   page = 1;
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+  }
 
   load(): void {
     this.api.auditLogs(this.page).subscribe((result) => {

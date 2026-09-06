@@ -5,8 +5,15 @@ export interface Role {
   isBuiltIn: boolean;
   permissionIds: number[];
 }
-export interface Permission { id: number; code: string; name: string }
-export interface TargetSystem { id: number; name: string }
+export interface Permission {
+  id: number;
+  code: string;
+  name: string;
+}
+export interface TargetSystem {
+  id: number;
+  name: string;
+}
 export interface User {
   id: string;
   fullName: string;

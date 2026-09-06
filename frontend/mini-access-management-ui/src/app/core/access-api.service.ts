@@ -1,6 +1,14 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { AccessRequest, Dashboard, PagedResult, Permission, Role, TargetSystem, User } from '../models';
+import {
+  AccessRequest,
+  Dashboard,
+  PagedResult,
+  Permission,
+  Role,
+  TargetSystem,
+  User,
+} from '../models';
 import { API_BASE_URL } from './api.constants';
 
 @Injectable({ providedIn: 'root' })
@@ -74,11 +82,13 @@ export class AccessApiService {
   }
   myRequests(page = 1, pageSize = 10) {
     return this.http.get<PagedResult<AccessRequest>>(
-      `${API_BASE_URL}/access-requests/mine?page=${page}&pageSize=${pageSize}`);
+      `${API_BASE_URL}/access-requests/mine?page=${page}&pageSize=${pageSize}`,
+    );
   }
   pendingApprovals(page = 1, pageSize = 10) {
     return this.http.get<PagedResult<AccessRequest>>(
-      `${API_BASE_URL}/access-requests/pending-approvals?page=${page}&pageSize=${pageSize}`);
+      `${API_BASE_URL}/access-requests/pending-approvals?page=${page}&pageSize=${pageSize}`,
+    );
   }
   requests(status?: string, page = 1, pageSize = 10) {
     const params = status ? new HttpParams().set('status', status) : undefined;
@@ -89,18 +99,24 @@ export class AccessApiService {
   }
   auditLogs(page = 1, pageSize = 20) {
     const params = new HttpParams().set('page', page).set('pageSize', pageSize);
-    return this.http.get<PagedResult<import('../models').AuditLog>>(
-      `${API_BASE_URL}/audit-logs`, { params });
+    return this.http.get<PagedResult<import('../models').AuditLog>>(`${API_BASE_URL}/audit-logs`, {
+      params,
+    });
   }
-  createRequest(value: { targetSystemId: number; requestedRoleId: string; businessJustification: string }) {
+  createRequest(value: {
+    targetSystemId: number;
+    requestedRoleId: string;
+    businessJustification: string;
+  }) {
     return this.http.post<AccessRequest>(`${API_BASE_URL}/access-requests`, value);
   }
   submitRequest(id: number) {
     return this.http.post<AccessRequest>(`${API_BASE_URL}/access-requests/${id}/submit`, {});
   }
   decide(id: number, action: 'approve' | 'reject', remarks: string) {
-    return this.http.post<AccessRequest>(
-      `${API_BASE_URL}/access-requests/${id}/${action}`, { remarks });
+    return this.http.post<AccessRequest>(`${API_BASE_URL}/access-requests/${id}/${action}`, {
+      remarks,
+    });
   }
   provision(id: number) {
     return this.http.post<AccessRequest>(`${API_BASE_URL}/access-requests/${id}/provision`, {});

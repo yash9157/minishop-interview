@@ -17,10 +17,13 @@ export class AuthService {
   readonly user = computed(() => this.state()?.user ?? null);
   readonly token = computed(() => this.state()?.accessToken ?? null);
   readonly isAdmin = computed(() => this.user()?.roles.includes('Admin') ?? false);
-  readonly canApprove = computed(() =>
-    this.user()?.roles.some((role) => role === 'Manager' || role === 'SecurityAdmin') ?? false);
-  readonly canProvision = computed(() =>
-    this.user()?.roles.some((role) => role === 'Admin' || role === 'Provisioner') ?? false);
+  readonly canApprove = computed(
+    () =>
+      this.user()?.roles.some((role) => role === 'Manager' || role === 'SecurityAdmin') ?? false,
+  );
+  readonly canProvision = computed(
+    () => this.user()?.roles.some((role) => role === 'Admin' || role === 'Provisioner') ?? false,
+  );
 
   login(value: { email: string; password: string }) {
     return this.http

@@ -1,29 +1,75 @@
-<div class="page-head"><div><h1>Provisioning</h1><p class="muted">Assign roles after final approval.</p></div></div>
-@if (error()) { <p class="error-message">{{ error() }}</p> }
-<div class="panel table-wrap"><table>
-  <thead><tr><th>Requester</th><th>System</th><th>Role</th><th></th></tr></thead>
-  <tbody>@for (request of approvedRequests(); track request.id) {
-    <tr><td>{{ request.requesterName }}</td><td>{{ request.targetSystem }}</td>
-      <td>{{ request.requestedRole }}</td><td>
-        <button class="primary" type="button" (click)="provision(request.id)">Provision</button>
-      </td></tr>
-  } @empty { <tr><td colspan="4">No approved requests are waiting.</td></tr> }</tbody>
-</table>
+<div class="page-head">
+  <div>
+    <h1>Provisioning</h1>
+    <p class="muted">Assign roles after final approval.</p>
+  </div>
+</div>
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>System</th>
+        <th>Role</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (request of approvedRequests(); track request.id) {
+        <tr>
+          <td>{{ request.requesterName }}</td>
+          <td>{{ request.targetSystem }}</td>
+          <td>{{ request.requestedRole }}</td>
+          <td>
+            <button class="primary" type="button" (click)="provision(request.id)">Provision</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4">No approved requests are waiting.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
   <div class="pager">
     <button type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
     <span>Page {{ page }}</span>
-    <button type="button" [disabled]="page * pageSize >= totalCount()" (click)="changePage(page + 1)">Next</button>
+    <button
+      type="button"
+      [disabled]="page * pageSize >= totalCount()"
+      (click)="changePage(page + 1)"
+    >
+      Next
+    </button>
   </div>
 </div>
 
 <div class="panel section-head table-wrap">
   <h2>Recently provisioned</h2>
   <table>
-    <thead><tr><th>Requester</th><th>System</th><th>Role</th><th>Provisioned by</th><th>Time</th></tr></thead>
-    <tbody>@for (request of provisionedRequests(); track request.id) {
-      <tr><td>{{ request.requesterName }}</td><td>{{ request.targetSystem }}</td>
-        <td>{{ request.requestedRole }}</td><td>{{ request.provisionedByName }}</td>
-        <td>{{ request.provisionedAtUtc | date:'medium' }}</td></tr>
-    } @empty { <tr><td colspan="5">No provisioned requests found.</td></tr> }</tbody>
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>System</th>
+        <th>Role</th>
+        <th>Provisioned by</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (request of provisionedRequests(); track request.id) {
+        <tr>
+          <td>{{ request.requesterName }}</td>
+          <td>{{ request.targetSystem }}</td>
+          <td>{{ request.requestedRole }}</td>
+          <td>{{ request.provisionedByName }}</td>
+          <td>{{ request.provisionedAtUtc | date: 'medium' }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5">No provisioned requests found.</td>
+        </tr>
+      }
+    </tbody>
   </table>
 </div>

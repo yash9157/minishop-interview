@@ -1,33 +1,103 @@
-<div class="page-head"><div><h1>My access requests</h1><p class="muted">Create a draft and submit it for two-level approval.</p></div></div>
-<form class="panel form-grid" [formGroup]="form" (ngSubmit)="create()">
-  <div class="field"><label for="target-system">Target system</label><select id="target-system" formControlName="targetSystemId">
-    <option [ngValue]="0">Select system</option>@for (system of systems(); track system.id) {
-      <option [ngValue]="system.id">{{ system.name }}</option>
-    }</select></div>
-  <div class="field"><label for="requested-role">Requested role</label><select id="requested-role" formControlName="requestedRoleId">
-    <option value="">Select role</option>@for (role of roles(); track role.id) {
-      <option [value]="role.id">{{ role.name }}</option>
-    }</select></div>
-  <div class="field full"><label for="business-justification">Business justification</label>
-    <textarea id="business-justification" rows="3" formControlName="businessJustification"></textarea></div>
-  <div class="full"><button class="primary" type="submit" [disabled]="form.invalid">Save draft</button></div>
-</form>
-@if (error()) { <p class="error-message">{{ error() }}</p> }
-<div class="panel section-head table-wrap"><table>
-  <thead><tr><th>Created</th><th>System</th><th>Role</th><th>Status</th><th>Approval history</th><th></th></tr></thead>
-  <tbody>@for (request of requests(); track request.id) {
-    <tr><td>{{ request.createdAtUtc | date:'short' }}</td><td>{{ request.targetSystem }}</td>
-      <td>{{ request.requestedRole }}</td><td><span class="status">{{ request.status }}</span></td>
-      <td>@for (approval of request.approvals; track approval.id) {
-        <small>L{{ approval.level }} {{ approval.approverName }}: {{ approval.decision }}<br></small>
-      }</td><td>@if (request.status === 'Draft') {
-        <button class="primary" type="button" (click)="submit(request.id)">Submit</button>
-      }</td></tr>
-  }</tbody>
-</table>
+<div class="page-head">
+  <div>
+    <h1>My access requests</h1>
+    <p class="muted">Create a draft and submit it for two-level approval.</p>
+  </div>
+  <button class="primary" type="button" (click)="openCreate()">
+    <i class="pi pi-plus"></i> New request
+  </button>
+</div>
+<p-dialog
+  header="New access request"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="createOpen()"
+  (visibleChange)="createOpen.set($event)"
+  [style]="{ width: '560px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+>
+  <form class="form-grid dialog-form" [formGroup]="form" (ngSubmit)="create()">
+    <div class="field">
+      <label for="target-system">Target system</label
+      ><select id="target-system" formControlName="targetSystemId">
+        <option [ngValue]="0">Select system</option>
+        @for (system of systems(); track system.id) {
+          <option [ngValue]="system.id">{{ system.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="requested-role">Requested role</label
+      ><select id="requested-role" formControlName="requestedRoleId">
+        <option value="">Select role</option>
+        @for (role of roles(); track role.id) {
+          <option [value]="role.id">{{ role.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="field full">
+      <label for="business-justification">Business justification</label>
+      <textarea
+        id="business-justification"
+        rows="3"
+        formControlName="businessJustification"
+      ></textarea>
+    </div>
+    <div class="full dialog-actions">
+      <button type="button" (click)="createOpen.set(false)">Cancel</button>
+      <button class="primary" type="submit" [disabled]="form.invalid || saving()">
+        {{ saving() ? 'Saving...' : 'Save draft' }}
+      </button>
+    </div>
+  </form>
+</p-dialog>
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Created</th>
+        <th>System</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Approval history</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (request of requests(); track request.id) {
+        <tr>
+          <td>{{ request.createdAtUtc | date: 'short' }}</td>
+          <td>{{ request.targetSystem }}</td>
+          <td>{{ request.requestedRole }}</td>
+          <td>
+            <span class="status">{{ request.status }}</span>
+          </td>
+          <td>
+            @for (approval of request.approvals; track approval.id) {
+              <small
+                >L{{ approval.level }} {{ approval.approverName }}: {{ approval.decision }}<br
+              /></small>
+            }
+          </td>
+          <td>
+            @if (request.status === 'Draft') {
+              <button class="primary" type="button" (click)="submit(request.id)">Submit</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
   <div class="pager">
     <button type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
     <span>Page {{ page }}</span>
-    <button type="button" [disabled]="page * pageSize >= totalCount()" (click)="changePage(page + 1)">Next</button>
+    <button
+      type="button"
+      [disabled]="page * pageSize >= totalCount()"
+      (click)="changePage(page + 1)"
+    >
+      Next
+    </button>
   </div>
 </div>

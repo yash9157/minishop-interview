@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MessageService } from 'primeng/api';
 import { AccessApiService } from '../../core/access-api.service';
 import { AccessRequest } from '../../models';
 
@@ -10,13 +11,15 @@ import { AccessRequest } from '../../models';
 })
 export class ApprovalsPage implements OnInit {
   private readonly api = inject(AccessApiService);
+  private readonly messages = inject(MessageService);
   readonly requests = signal<AccessRequest[]>([]);
   readonly totalCount = signal(0);
-  readonly error = signal('');
   readonly remarks = new FormRecord<FormControl<string>>({});
   page = 1;
   readonly pageSize = 10;
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+  }
   load(): void {
     this.api.pendingApprovals(this.page, this.pageSize).subscribe((x) => {
       this.requests.set(x.items);
@@ -27,10 +30,13 @@ export class ApprovalsPage implements OnInit {
   remarkControl(id: number): FormControl<string> {
     const key = id.toString();
     if (!this.remarks.contains(key))
-      this.remarks.addControl(key, new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(3), Validators.maxLength(500)],
-      }));
+      this.remarks.addControl(
+        key,
+        new FormControl('', {
+          nonNullable: true,
+          validators: [Validators.required, Validators.minLength(3), Validators.maxLength(500)],
+        }),
+      );
     return this.remarks.controls[key];
   }
   decide(id: number, action: 'approve' | 'reject'): void {
@@ -40,8 +46,20 @@ export class ApprovalsPage implements OnInit {
       return;
     }
     this.api.decide(id, action, remarks.value).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(e.error?.detail ?? 'Unable to record decision.'),
+      next: () => {
+        this.load();
+        this.messages.add({
+          severity: 'success',
+          summary: action === 'approve' ? 'Request approved' : 'Request rejected',
+          detail: 'The decision and remarks were recorded.',
+        });
+      },
+      error: (e) =>
+        this.messages.add({
+          severity: 'error',
+          summary: 'Action failed',
+          detail: e.error?.detail ?? 'Unable to record decision.',
+        }),
     });
   }
   changePage(value: number): void {

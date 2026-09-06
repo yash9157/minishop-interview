@@ -3,36 +3,75 @@
     <h1>Roles and permissions</h1>
     <p class="muted">Manage requestable roles and their permissions.</p>
   </div>
+  <div class="toolbar">
+    <button type="button" (click)="openCreatePermission()">
+      <i class="pi pi-plus"></i> New permission
+    </button>
+    <button class="primary" type="button" (click)="openCreateRole()">
+      <i class="pi pi-plus"></i> New role
+    </button>
+  </div>
 </div>
 
-<form class="panel form-grid" [formGroup]="permissionForm" (ngSubmit)="createPermission()">
-  <div class="field">
-    <label for="permission-code">Permission code</label>
-    <input id="permission-code" formControlName="code" placeholder="REPORT.READ">
-  </div>
-  <div class="field">
-    <label for="permission-name">Permission name</label>
-    <input id="permission-name" formControlName="name">
-  </div>
-  <div class="full"><button class="primary" type="submit">Create permission</button></div>
-</form>
+<p-dialog
+  header="Create permission"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="createPermissionOpen()"
+  (visibleChange)="createPermissionOpen.set($event)"
+  [style]="{ width: '520px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+>
+  <form class="form-grid dialog-form" [formGroup]="permissionForm" (ngSubmit)="createPermission()">
+    <div class="field">
+      <label for="permission-code">Permission code</label
+      ><input id="permission-code" formControlName="code" placeholder="REPORT.READ" />
+    </div>
+    <div class="field">
+      <label for="permission-name">Permission name</label
+      ><input id="permission-name" formControlName="name" />
+    </div>
+    <div class="full dialog-actions">
+      <button type="button" (click)="createPermissionOpen.set(false)">Cancel</button>
+      <button class="primary" type="submit" [disabled]="permissionForm.invalid || saving()">
+        {{ saving() ? 'Creating...' : 'Create permission' }}
+      </button>
+    </div>
+  </form>
+</p-dialog>
 
-@if (editingPermissionId()) {
-  <form class="panel form-grid section-head" [formGroup]="permissionEditForm" (ngSubmit)="savePermissionEdit()">
+<p-dialog
+  header="Edit permission"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="editingPermissionId() !== null"
+  (visibleChange)="!$event && closePermissionEdit()"
+  [style]="{ width: '520px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+>
+  <form
+    class="form-grid dialog-form"
+    [formGroup]="permissionEditForm"
+    (ngSubmit)="savePermissionEdit()"
+  >
     <div class="field">
       <label for="edit-permission-code">Permission code</label>
-      <input id="edit-permission-code" formControlName="code">
+      <input id="edit-permission-code" formControlName="code" />
     </div>
     <div class="field">
       <label for="edit-permission-name">Permission name</label>
-      <input id="edit-permission-name" formControlName="name">
+      <input id="edit-permission-name" formControlName="name" />
     </div>
-    <div class="full row-actions">
-      <button class="primary" type="submit">Save permission</button>
-      <button type="button" (click)="editingPermissionId.set(null)">Cancel</button>
+    <div class="full dialog-actions">
+      <button type="button" (click)="closePermissionEdit()">Cancel</button>
+      <button class="primary" type="submit" [disabled]="permissionEditForm.invalid || saving()">
+        {{ saving() ? 'Saving...' : 'Save permission' }}
+      </button>
     </div>
   </form>
-}
+</p-dialog>
 
 <div class="panel section-head">
   <h2>Permissions</h2>
@@ -45,40 +84,84 @@
         </div>
         <div class="row-actions">
           <button type="button" (click)="editPermission(permission)">Edit</button>
-          <button class="danger" type="button" (click)="removePermission(permission)">Delete</button>
+          <button class="danger" type="button" (click)="removePermission(permission)">
+            Delete
+          </button>
         </div>
       </div>
     }
   </div>
   <div class="pager">
-    <button type="button" [disabled]="permissionPage === 1" (click)="changePermissionPage(permissionPage - 1)">Previous</button>
+    <button
+      type="button"
+      [disabled]="permissionPage === 1"
+      (click)="changePermissionPage(permissionPage - 1)"
+    >
+      Previous
+    </button>
     <span>Page {{ permissionPage }}</span>
-    <button type="button" [disabled]="permissionPage * pageSize >= permissionTotal()" (click)="changePermissionPage(permissionPage + 1)">Next</button>
+    <button
+      type="button"
+      [disabled]="permissionPage * pageSize >= permissionTotal()"
+      (click)="changePermissionPage(permissionPage + 1)"
+    >
+      Next
+    </button>
   </div>
 </div>
 
-<form class="panel form-grid section-head" [formGroup]="form" (ngSubmit)="create()">
-  <div class="field">
-    <label for="role-name">Role name</label>
-    <input id="role-name" formControlName="name">
-  </div>
-  <label><input type="checkbox" formControlName="isRequestable"> Requestable role</label>
-  <div class="full"><button class="primary" type="submit">Create role</button></div>
-</form>
-
-@if (editingRoleId()) {
-  <form class="panel form-grid section-head" [formGroup]="roleEditForm" (ngSubmit)="saveRoleEdit()">
+<p-dialog
+  header="Create role"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="createRoleOpen()"
+  (visibleChange)="createRoleOpen.set($event)"
+  [style]="{ width: '480px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+>
+  <form class="dialog-form" [formGroup]="form" (ngSubmit)="create()">
     <div class="field">
-      <label for="edit-role-name">Role name</label>
-      <input id="edit-role-name" formControlName="name">
+      <label for="role-name">Role name</label><input id="role-name" formControlName="name" />
     </div>
-    <label><input type="checkbox" formControlName="isRequestable"> Requestable role</label>
-    <div class="full row-actions">
-      <button class="primary" type="submit">Save role</button>
-      <button type="button" (click)="editingRoleId.set(null)">Cancel</button>
+    <label class="check-field"
+      ><input type="checkbox" formControlName="isRequestable" /> Requestable role</label
+    >
+    <div class="dialog-actions">
+      <button type="button" (click)="createRoleOpen.set(false)">Cancel</button>
+      <button class="primary" type="submit" [disabled]="form.invalid || saving()">
+        {{ saving() ? 'Creating...' : 'Create role' }}
+      </button>
     </div>
   </form>
-}
+</p-dialog>
+
+<p-dialog
+  header="Edit role"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="editingRoleId() !== null"
+  (visibleChange)="!$event && closeRoleEdit()"
+  [style]="{ width: '480px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+>
+  <form class="dialog-form" [formGroup]="roleEditForm" (ngSubmit)="saveRoleEdit()">
+    <div class="field">
+      <label for="edit-role-name">Role name</label>
+      <input id="edit-role-name" formControlName="name" />
+    </div>
+    <label class="check-field"
+      ><input type="checkbox" formControlName="isRequestable" /> Requestable role</label
+    >
+    <div class="dialog-actions">
+      <button type="button" (click)="closeRoleEdit()">Cancel</button>
+      <button class="primary" type="submit" [disabled]="roleEditForm.invalid || saving()">
+        {{ saving() ? 'Saving...' : 'Save role' }}
+      </button>
+    </div>
+  </form>
+</p-dialog>
 
 <section class="panel section-head">
   <h2>Role-permission matrix</h2>
@@ -98,7 +181,9 @@
           <tr>
             <td>
               {{ role.name }}
-              @if (role.isRequestable) { <small>(Requestable)</small> }
+              @if (role.isRequestable) {
+                <small>(Requestable)</small>
+              }
             </td>
             @for (permission of permissions(); track permission.id) {
               <td>
@@ -107,7 +192,7 @@
                   [attr.aria-label]="permission.name + ' for ' + role.name"
                   [checked]="selected[role.id]?.includes(permission.id)"
                   (change)="toggle(role.id, permission.id, $any($event.target).checked)"
-                >
+                />
               </td>
             }
             <td>
@@ -125,8 +210,16 @@
     </table>
   </div>
   <div class="pager">
-    <button type="button" [disabled]="rolePage === 1" (click)="changeRolePage(rolePage - 1)">Previous</button>
+    <button type="button" [disabled]="rolePage === 1" (click)="changeRolePage(rolePage - 1)">
+      Previous
+    </button>
     <span>Page {{ rolePage }}</span>
-    <button type="button" [disabled]="rolePage * pageSize >= roleTotal()" (click)="changeRolePage(rolePage + 1)">Next</button>
+    <button
+      type="button"
+      [disabled]="rolePage * pageSize >= roleTotal()"
+      (click)="changeRolePage(rolePage + 1)"
+    >
+      Next
+    </button>
   </div>
 </section>

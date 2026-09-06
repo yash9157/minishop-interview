@@ -116,10 +116,15 @@ $folders = @(
   'backend/src/Mini.Access.Management.Application.Contracts/Auth',
   'backend/src/Mini.Access.Management.Application.Contracts/Roles',
   'backend/src/Mini.Access.Management.Application.Contracts/Users',
-  'backend/src/Mini.Access.Management.Application/AccessManagement',
+  'backend/src/Mini.Access.Management.Application/AccessRequests',
+  'backend/src/Mini.Access.Management.Application/AuditLogs',
   'backend/src/Mini.Access.Management.Application/Auth',
+  'backend/src/Mini.Access.Management.Application/Dashboard',
+  'backend/src/Mini.Access.Management.Application/Roles',
+  'backend/src/Mini.Access.Management.Application/Users',
   'backend/src/Mini.Access.Management.EntityFrameworkCore/Configurations',
-  'backend/src/Mini.Access.Management.HttpApi/Controllers'
+  'backend/src/Mini.Access.Management.HttpApi/Controllers',
+  'backend/src/Mini.Access.Management.HttpApi/Middleware'
 )
 $folders | ForEach-Object { New-Item -ItemType Directory $_ -Force }
 ```

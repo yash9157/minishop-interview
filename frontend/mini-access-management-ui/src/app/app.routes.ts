@@ -39,7 +39,8 @@ export const routes: Routes = [
   {
     path: 'provisioning',
     canActivate: [authGuard, provisionerGuard],
-    loadComponent: () => import('./features/provisioning/provisioning.page').then((x) => x.ProvisioningPage),
+    loadComponent: () =>
+      import('./features/provisioning/provisioning.page').then((x) => x.ProvisioningPage),
   },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },

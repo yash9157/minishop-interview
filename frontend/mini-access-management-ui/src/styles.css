@@ -68,9 +68,6 @@ p {
 .panel > h2:first-child {
   margin-bottom: 0.5rem;
 }
-.panel > p:last-child {
-  margin-bottom: 0;
-}
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -84,10 +81,20 @@ p {
   border-radius: 12px;
   background: #fff;
 }
-.card strong { font-size: 1.8rem; }
-.card span, small { color: var(--muted); }
-.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chips span, .status {
+.card strong {
+  font-size: 1.8rem;
+}
+.card span,
+small {
+  color: var(--muted);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chips span,
+.status {
   padding: 0.3rem 0.6rem;
   border-radius: 999px;
   background: #eef2ff;
@@ -96,29 +103,138 @@ p {
 .table-wrap {
   overflow-x: auto;
 }
-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
-th, td { padding: 0.75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-th { color: #475569; font-size: 0.78rem; }
-input, textarea, select {
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+th,
+td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: #475569;
+  font-size: 0.78rem;
+}
+input,
+textarea,
+select {
   width: 100%;
   padding: 0.65rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #fff;
 }
-input[type='checkbox'] { width: auto; }
-td button { margin: 0.15rem; }
+input[type='checkbox'] {
+  width: auto;
+}
+td button {
+  margin: 0.15rem;
+}
 button {
   padding: 0.55rem 0.75rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #fff;
   cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
 }
-button.primary { color: #fff; border-color: var(--primary); background: var(--primary); }
-button.danger { color: #b91c1c; }
-button:disabled { cursor: not-allowed; opacity: 0.55; }
-.pager { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+button.primary {
+  color: #fff;
+  border-color: var(--primary);
+  background: var(--primary);
+}
+button.danger {
+  color: #b91c1c;
+}
+button:not(:disabled):hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+button.primary:not(:disabled):hover {
+  border-color: #4338ca;
+  background: #4338ca;
+}
+button.danger:not(:disabled):hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.toolbar,
+.dialog-actions,
+.assign-role {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.toolbar,
+.dialog-actions {
+  justify-content: flex-end;
+}
+.toolbar button,
+.page-head > button {
+  white-space: nowrap;
+}
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+.dialog-actions {
+  padding-top: 0.4rem;
+}
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+}
+.assign-role {
+  min-width: 240px;
+}
+.assign-role select {
+  min-width: 150px;
+}
+.users-table {
+  min-width: 980px;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.15rem;
+}
+.status .chip-remove {
+  width: 24px;
+  height: 24px;
+  margin: -0.2rem -0.35rem -0.2rem 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 1;
+}
+.status .chip-remove:hover {
+  color: #b91c1c;
+  background: #fff;
+}
 
 .permission-list {
   display: grid;
@@ -194,10 +310,6 @@ td .row-actions button {
   font-size: 0.78rem;
   font-weight: 650;
 }
-.field small {
-  color: var(--muted);
-  font-size: 0.72rem;
-}
 .full {
   grid-column: 1 / -1;
 }
@@ -245,6 +357,12 @@ button:focus-visible {
 .p-inputtext {
   max-width: 100%;
 }
+.p-toast {
+  width: min(25rem, calc(100vw - 2rem)) !important;
+}
+.p-dialog-mask {
+  padding: 1rem;
+}
 
 @media (max-width: 800px) {
   .page-head {
@@ -258,6 +376,16 @@ button:focus-visible {
   }
   .page-head {
     flex-direction: column;
+  }
+  .page-head > button,
+  .toolbar {
+    width: 100%;
+  }
+  .toolbar button {
+    flex: 1;
+  }
+  .dialog-actions button {
+    flex: 1;
   }
   .permission-row {
     align-items: flex-start;

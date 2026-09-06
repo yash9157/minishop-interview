@@ -11,5 +11,7 @@ import { Dashboard } from '../../models';
 export class DashboardPage implements OnInit {
   private readonly api = inject(AccessApiService);
   readonly data = signal<Dashboard | null>(null);
-  ngOnInit(): void { this.api.dashboard().subscribe((x) => this.data.set(x)); }
+  ngOnInit(): void {
+    this.api.dashboard().subscribe((x) => this.data.set(x));
+  }
 }

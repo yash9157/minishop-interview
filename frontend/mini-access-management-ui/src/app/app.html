@@ -4,7 +4,12 @@
 @if (auth.user()) {
   <div class="shell">
     <aside [class.open]="menuOpen">
-      <button class="close-menu" type="button" aria-label="Close navigation" (click)="menuOpen = false">
+      <button
+        class="close-menu"
+        type="button"
+        aria-label="Close navigation"
+        (click)="menuOpen = false"
+      >
         <i class="pi pi-times"></i>
       </button>
       <div class="brand">
