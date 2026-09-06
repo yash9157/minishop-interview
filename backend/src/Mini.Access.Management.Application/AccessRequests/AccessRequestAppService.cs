@@ -19,11 +19,11 @@ public sealed class AccessRequestAppService(
     public Task<PagedResult<AccessRequestDto>> GetPendingAsync(
         Guid approverId, PagedRequest page) =>
         GetPageAsync(Query()
-            .Where(x => x.Status == AccessRequestStatus.Pending &&
-                x.Approvals.Any(a => a.ApproverId == approverId &&
-                    a.Decision == ApprovalDecision.Pending &&
-                    !x.Approvals.Any(previous =>
-                        previous.Level < a.Level && previous.Decision != ApprovalDecision.Approved))),
+          .Where(x => x.Status == AccessRequestStatus.Pending &&
+              x.Approvals.Any(a => a.ApproverId == approverId &&
+                  a.Decision == ApprovalDecision.Pending &&
+                !x.Approvals.Any(previous =>
+                    previous.Level < a.Level && previous.Decision != ApprovalDecision.Approved))),
             page);
 
     public Task<PagedResult<AccessRequestDto>> GetAllAsync(
