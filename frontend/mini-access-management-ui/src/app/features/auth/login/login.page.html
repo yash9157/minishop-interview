@@ -11,11 +11,12 @@
 
       <div class="field">
         <label for="password">Password</label>
-        <input
-          id="password"
-          pInputPassword
+        <p-password
+          inputId="password"
           formControlName="password"
           autocomplete="current-password"
+          [feedback]="false"
+          [toggleMask]="true"
         />
       </div>
 

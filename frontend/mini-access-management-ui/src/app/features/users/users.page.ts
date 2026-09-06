@@ -1,13 +1,35 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { SelectModule } from 'primeng/select';
+import { TableModule, TablePageEvent } from 'primeng/table';
 import { AccessApiService } from '../../core/access-api.service';
 import { Role, User } from '../../models';
 
 @Component({
   selector: 'app-users',
-  imports: [ReactiveFormsModule, DialogModule],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    CheckboxModule,
+    DialogModule,
+    InputTextModule,
+    PasswordModule,
+    SelectModule,
+    TableModule,
+  ],
   templateUrl: './users.page.html',
 })
 export class UsersPage implements OnInit {
@@ -16,6 +38,9 @@ export class UsersPage implements OnInit {
   private readonly messages = inject(MessageService);
   readonly users = signal<User[]>([]);
   readonly managerOptions = signal<User[]>([]);
+  readonly editManagerOptions = computed(() =>
+    this.managerOptions().filter((manager) => manager.id !== this.editingId()),
+  );
   readonly roles = signal<Role[]>([]);
   readonly permissions = signal<string[]>([]);
   readonly permissionsFor = signal('');
@@ -25,6 +50,7 @@ export class UsersPage implements OnInit {
   readonly saving = signal(false);
   page = 1;
   readonly pageSize = 10;
+
   private idempotencyKey = crypto.randomUUID();
   readonly form = new FormGroup({
     fullName: new FormControl('', { nonNullable: true, validators: Validators.required }),
@@ -182,8 +208,8 @@ export class UsersPage implements OnInit {
     this.editingId.set(null);
   }
 
-  changePage(value: number): void {
-    this.page = value;
+  changePage(event: TablePageEvent): void {
+    this.page = event.first / event.rows + 1;
     this.load();
   }
 

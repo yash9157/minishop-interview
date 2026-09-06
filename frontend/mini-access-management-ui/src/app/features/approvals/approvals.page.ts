@@ -1,12 +1,15 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule, TablePageEvent } from 'primeng/table';
 import { AccessApiService } from '../../core/access-api.service';
 import { AccessRequest } from '../../models';
 
 @Component({
   selector: 'app-approvals',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, TableModule],
   templateUrl: './approvals.page.html',
 })
 export class ApprovalsPage implements OnInit {
@@ -17,6 +20,7 @@ export class ApprovalsPage implements OnInit {
   readonly remarks = new FormRecord<FormControl<string>>({});
   page = 1;
   readonly pageSize = 10;
+
   ngOnInit(): void {
     this.load();
   }
@@ -62,8 +66,8 @@ export class ApprovalsPage implements OnInit {
         }),
     });
   }
-  changePage(value: number): void {
-    this.page = value;
+  changePage(event: TablePageEvent): void {
+    this.page = event.first / event.rows + 1;
     this.load();
   }
 }

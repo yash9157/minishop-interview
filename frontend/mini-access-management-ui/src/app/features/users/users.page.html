@@ -1,11 +1,6 @@
 <div class="page-head">
-  <div>
-    <h1>Users</h1>
-    <p class="muted">Create users and assign multiple roles.</p>
-  </div>
-  <button class="primary" type="button" (click)="openCreate()">
-    <i class="pi pi-plus"></i> New user
-  </button>
+  <h1>Users</h1>
+  <p-button label="New user" icon="pi pi-plus" (onClick)="openCreate()" />
 </div>
 
 <p-dialog
@@ -20,36 +15,44 @@
 >
   <form class="form-grid dialog-form" [formGroup]="form" (ngSubmit)="create()">
     <div class="field">
-      <label for="new-user-name">Full name</label
-      ><input id="new-user-name" formControlName="fullName" />
+      <label for="new-user-name">Full name</label>
+      <input id="new-user-name" pInputText formControlName="fullName" />
     </div>
     <div class="field">
-      <label for="new-user-email">Email</label
-      ><input id="new-user-email" type="email" formControlName="email" />
+      <label for="new-user-email">Email</label>
+      <input id="new-user-email" pInputText type="email" formControlName="email" />
     </div>
     <div class="field">
-      <label for="new-user-password">Password</label
-      ><input
-        id="new-user-password"
-        type="password"
-        autocomplete="new-password"
+      <label for="new-user-password">Password</label>
+      <p-password
+        inputId="new-user-password"
         formControlName="password"
+        autocomplete="new-password"
+        [feedback]="false"
+        [toggleMask]="true"
       />
     </div>
     <div class="field">
-      <label for="new-user-manager">Manager</label
-      ><select id="new-user-manager" formControlName="managerId">
-        <option [ngValue]="null">No manager</option>
-        @for (user of managerOptions(); track user.id) {
-          <option [value]="user.id">{{ user.fullName }}</option>
-        }
-      </select>
+      <label for="new-user-manager">Manager</label>
+      <p-select
+        inputId="new-user-manager"
+        formControlName="managerId"
+        [options]="managerOptions()"
+        optionLabel="fullName"
+        optionValue="id"
+        placeholder="No manager"
+        [showClear]="true"
+        appendTo="body"
+      />
     </div>
     <div class="full dialog-actions">
-      <button type="button" (click)="createOpen.set(false)">Cancel</button>
-      <button class="primary" type="submit" [disabled]="form.invalid || saving()">
-        {{ saving() ? 'Creating...' : 'Create user' }}
-      </button>
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="createOpen.set(false)"
+      />
+      <p-button type="submit" label="Create user" [loading]="saving()" [disabled]="form.invalid" />
     </div>
   </form>
 </p-dialog>
@@ -66,30 +69,38 @@
 >
   <form class="form-grid dialog-form" [formGroup]="editForm" (ngSubmit)="saveEdit()">
     <div class="field">
-      <label for="edit-user-name">Full name</label
-      ><input id="edit-user-name" formControlName="fullName" />
+      <label for="edit-user-name">Full name</label>
+      <input id="edit-user-name" pInputText formControlName="fullName" />
     </div>
     <div class="field">
-      <label for="edit-user-email">Email</label
-      ><input id="edit-user-email" type="email" formControlName="email" />
+      <label for="edit-user-email">Email</label>
+      <input id="edit-user-email" pInputText type="email" formControlName="email" />
     </div>
     <div class="field">
-      <label for="edit-user-manager">Manager</label
-      ><select id="edit-user-manager" formControlName="managerId">
-        <option [ngValue]="null">No manager</option>
-        @for (manager of managerOptions(); track manager.id) {
-          @if (manager.id !== editingId()) {
-            <option [value]="manager.id">{{ manager.fullName }}</option>
-          }
-        }
-      </select>
+      <label for="edit-user-manager">Manager</label>
+      <p-select
+        inputId="edit-user-manager"
+        formControlName="managerId"
+        [options]="editManagerOptions()"
+        optionLabel="fullName"
+        optionValue="id"
+        placeholder="No manager"
+        [showClear]="true"
+        appendTo="body"
+      />
     </div>
-    <label class="check-field"><input type="checkbox" formControlName="isActive" /> Active</label>
+    <div class="check-field">
+      <p-checkbox inputId="edit-user-active" formControlName="isActive" [binary]="true" />
+      <label for="edit-user-active">Active</label>
+    </div>
     <div class="full dialog-actions">
-      <button type="button" (click)="closeEdit()">Cancel</button>
-      <button class="primary" type="submit" [disabled]="editForm.invalid || saving()">
-        {{ saving() ? 'Saving...' : 'Save changes' }}
-      </button>
+      <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="closeEdit()" />
+      <p-button
+        type="submit"
+        label="Save changes"
+        [loading]="saving()"
+        [disabled]="editForm.invalid"
+      />
     </div>
   </form>
 </p-dialog>
@@ -115,9 +126,23 @@
   }
 </p-dialog>
 
-<div class="panel table-wrap">
-  <table class="users-table">
-    <thead>
+<div class="panel">
+  <p-table
+    [value]="users()"
+    [lazy]="true"
+    [lazyLoadOnInit]="false"
+    [paginator]="true"
+    [alwaysShowPaginator]="true"
+    [first]="(page - 1) * pageSize"
+    [rows]="pageSize"
+    [totalRecords]="totalCount()"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Page {currentPage} of {totalPages} · {totalRecords} items"
+    [scrollable]="true"
+    [tableStyle]="{ 'min-width': '980px' }"
+    (onPage)="changePage($event)"
+  >
+    <ng-template #header>
       <tr>
         <th>User</th>
         <th>Manager</th>
@@ -125,65 +150,78 @@
         <th>Assign role</th>
         <th>Actions</th>
       </tr>
-    </thead>
-    <tbody>
-      @for (user of users(); track user.id) {
-        <tr>
-          <td>
-            <strong>{{ user.fullName }}</strong
-            ><br /><small>{{ user.email }}</small>
-          </td>
-          <td>{{ user.managerName || '-' }}</td>
-          <td>
-            @for (role of user.roles; track role) {
-              <span class="status"
-                >{{ role }}
-                <button
-                  class="chip-remove"
-                  type="button"
-                  [attr.aria-label]="'Remove ' + role"
-                  (click)="removeRole(user, role)"
-                >
-                  ×
-                </button></span
+    </ng-template>
+    <ng-template #body let-user>
+      <tr>
+        <td>
+          <strong>{{ user.fullName }}</strong
+          ><br /><small>{{ user.email }}</small>
+        </td>
+        <td>{{ user.managerName || '-' }}</td>
+        <td>
+          @for (role of user.roles; track role) {
+            <span class="status"
+              >{{ role }}
+              <button
+                class="chip-remove"
+                type="button"
+                [attr.aria-label]="'Remove ' + role"
+                (click)="removeRole(user, role)"
               >
-            }
-          </td>
-          <td>
-            <div class="assign-role">
-              <select
-                [(value)]="selectedRoles[user.id]"
-                (change)="selectedRoles[user.id] = $any($event.target).value"
-              >
-                <option value="">Select role</option>
-                @for (role of roles(); track role.id) {
-                  <option [value]="role.id">{{ role.name }}</option>
-                }</select
-              ><button type="button" [disabled]="!selectedRoles[user.id]" (click)="assign(user)">
-                Assign
-              </button>
-            </div>
-          </td>
-          <td>
-            <div class="row-actions">
-              <button type="button" (click)="showPermissions(user)">Permissions</button>
-              <button type="button" (click)="edit(user)">Edit</button>
-              <button class="danger" type="button" (click)="remove(user)">Deactivate</button>
-            </div>
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
-  <div class="pager">
-    <button type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
-    <span>Page {{ page }}</span>
-    <button
-      type="button"
-      [disabled]="page * pageSize >= totalCount()"
-      (click)="changePage(page + 1)"
-    >
-      Next
-    </button>
-  </div>
+                ×
+              </button></span
+            >
+          }
+        </td>
+        <td>
+          <div class="assign-role">
+            <p-select
+              [(ngModel)]="selectedRoles[user.id]"
+              [options]="roles()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select role"
+              appendTo="body"
+            />
+            <p-button
+              label="Assign"
+              size="small"
+              [disabled]="!selectedRoles[user.id]"
+              (onClick)="assign(user)"
+            />
+          </div>
+        </td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              label="Permissions"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="showPermissions(user)"
+            />
+            <p-button
+              label="Edit"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="edit(user)"
+            />
+            <p-button
+              label="Deactivate"
+              size="small"
+              severity="danger"
+              [outlined]="true"
+              (onClick)="remove(user)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5">No users found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </div>

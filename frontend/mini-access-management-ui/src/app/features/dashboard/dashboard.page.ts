@@ -1,11 +1,12 @@
 import { DatePipe, KeyValuePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { TableModule } from 'primeng/table';
 import { AccessApiService } from '../../core/access-api.service';
 import { Dashboard } from '../../models';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, KeyValuePipe],
+  imports: [DatePipe, KeyValuePipe, TableModule],
   templateUrl: './dashboard.page.html',
 })
 export class DashboardPage implements OnInit {

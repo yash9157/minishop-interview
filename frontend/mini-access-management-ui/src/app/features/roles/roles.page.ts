@@ -1,13 +1,31 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TableModule, TablePageEvent } from 'primeng/table';
 import { AccessApiService } from '../../core/access-api.service';
 import { Permission, Role } from '../../models';
 
 @Component({
   selector: 'app-roles',
-  imports: [ReactiveFormsModule, DialogModule],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    CheckboxModule,
+    DialogModule,
+    InputTextModule,
+    TableModule,
+  ],
   templateUrl: './roles.page.html',
 })
 export class RolesPage implements OnInit {
@@ -21,6 +39,7 @@ export class RolesPage implements OnInit {
   rolePage = 1;
   permissionPage = 1;
   readonly pageSize = 10;
+
   readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: Validators.required }),
     isRequestable: new FormControl(true, { nonNullable: true }),
@@ -81,12 +100,6 @@ export class RolesPage implements OnInit {
       },
       error: (e) => this.showError(e, 'Unable to create role.'),
     });
-  }
-  toggle(roleId: string, permissionId: number, checked: boolean): void {
-    const ids = this.selected[roleId] ?? [];
-    this.selected[roleId] = checked
-      ? [...new Set([...ids, permissionId])]
-      : ids.filter((x) => x !== permissionId);
   }
   save(role: Role): void {
     this.api.setRolePermissions(role.id, this.selected[role.id] ?? []).subscribe({
@@ -204,12 +217,12 @@ export class RolesPage implements OnInit {
         }),
     });
   }
-  changeRolePage(value: number): void {
-    this.rolePage = value;
+  changeRolePage(event: TablePageEvent): void {
+    this.rolePage = event.first / event.rows + 1;
     this.load();
   }
-  changePermissionPage(value: number): void {
-    this.permissionPage = value;
+  changePermissionPage(event: TablePageEvent): void {
+    this.permissionPage = event.first / event.rows + 1;
     this.load();
   }
   private showError(error: { error?: { detail?: string } }, fallback: string): void {

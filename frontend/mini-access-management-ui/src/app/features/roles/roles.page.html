@@ -1,15 +1,14 @@
 <div class="page-head">
-  <div>
-    <h1>Roles and permissions</h1>
-    <p class="muted">Manage requestable roles and their permissions.</p>
-  </div>
+  <h1>Roles and permissions</h1>
   <div class="toolbar">
-    <button type="button" (click)="openCreatePermission()">
-      <i class="pi pi-plus"></i> New permission
-    </button>
-    <button class="primary" type="button" (click)="openCreateRole()">
-      <i class="pi pi-plus"></i> New role
-    </button>
+    <p-button
+      label="New permission"
+      icon="pi pi-plus"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="openCreatePermission()"
+    />
+    <p-button label="New role" icon="pi pi-plus" (onClick)="openCreateRole()" />
   </div>
 </div>
 
@@ -25,18 +24,26 @@
 >
   <form class="form-grid dialog-form" [formGroup]="permissionForm" (ngSubmit)="createPermission()">
     <div class="field">
-      <label for="permission-code">Permission code</label
-      ><input id="permission-code" formControlName="code" placeholder="REPORT.READ" />
+      <label for="permission-code">Permission code</label>
+      <input id="permission-code" pInputText formControlName="code" placeholder="REPORT.READ" />
     </div>
     <div class="field">
-      <label for="permission-name">Permission name</label
-      ><input id="permission-name" formControlName="name" />
+      <label for="permission-name">Permission name</label>
+      <input id="permission-name" pInputText formControlName="name" />
     </div>
     <div class="full dialog-actions">
-      <button type="button" (click)="createPermissionOpen.set(false)">Cancel</button>
-      <button class="primary" type="submit" [disabled]="permissionForm.invalid || saving()">
-        {{ saving() ? 'Creating...' : 'Create permission' }}
-      </button>
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="createPermissionOpen.set(false)"
+      />
+      <p-button
+        type="submit"
+        label="Create permission"
+        [loading]="saving()"
+        [disabled]="permissionForm.invalid"
+      />
     </div>
   </form>
 </p-dialog>
@@ -58,56 +65,84 @@
   >
     <div class="field">
       <label for="edit-permission-code">Permission code</label>
-      <input id="edit-permission-code" formControlName="code" />
+      <input id="edit-permission-code" pInputText formControlName="code" />
     </div>
     <div class="field">
       <label for="edit-permission-name">Permission name</label>
-      <input id="edit-permission-name" formControlName="name" />
+      <input id="edit-permission-name" pInputText formControlName="name" />
     </div>
     <div class="full dialog-actions">
-      <button type="button" (click)="closePermissionEdit()">Cancel</button>
-      <button class="primary" type="submit" [disabled]="permissionEditForm.invalid || saving()">
-        {{ saving() ? 'Saving...' : 'Save permission' }}
-      </button>
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="closePermissionEdit()"
+      />
+      <p-button
+        type="submit"
+        label="Save permission"
+        [loading]="saving()"
+        [disabled]="permissionEditForm.invalid"
+      />
     </div>
   </form>
 </p-dialog>
 
 <div class="panel section-head">
   <h2>Permissions</h2>
-  <div class="permission-list">
-    @for (permission of permissions(); track permission.id) {
-      <div class="permission-row">
-        <div>
+  <p-table
+    [value]="permissions()"
+    [lazy]="true"
+    [lazyLoadOnInit]="false"
+    [paginator]="true"
+    [alwaysShowPaginator]="true"
+    [first]="(permissionPage - 1) * pageSize"
+    [rows]="pageSize"
+    [totalRecords]="permissionTotal()"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Page {currentPage} of {totalPages} · {totalRecords} items"
+    [scrollable]="true"
+    (onPage)="changePermissionPage($event)"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-permission>
+      <tr>
+        <td>
           <strong>{{ permission.code }}</strong>
-          <small>{{ permission.name }}</small>
-        </div>
-        <div class="row-actions">
-          <button type="button" (click)="editPermission(permission)">Edit</button>
-          <button class="danger" type="button" (click)="removePermission(permission)">
-            Delete
-          </button>
-        </div>
-      </div>
-    }
-  </div>
-  <div class="pager">
-    <button
-      type="button"
-      [disabled]="permissionPage === 1"
-      (click)="changePermissionPage(permissionPage - 1)"
-    >
-      Previous
-    </button>
-    <span>Page {{ permissionPage }}</span>
-    <button
-      type="button"
-      [disabled]="permissionPage * pageSize >= permissionTotal()"
-      (click)="changePermissionPage(permissionPage + 1)"
-    >
-      Next
-    </button>
-  </div>
+        </td>
+        <td>{{ permission.name }}</td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              label="Edit"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="editPermission(permission)"
+            />
+            <p-button
+              label="Delete"
+              size="small"
+              severity="danger"
+              [outlined]="true"
+              (onClick)="removePermission(permission)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="3">No permissions found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </div>
 
 <p-dialog
@@ -122,16 +157,21 @@
 >
   <form class="dialog-form" [formGroup]="form" (ngSubmit)="create()">
     <div class="field">
-      <label for="role-name">Role name</label><input id="role-name" formControlName="name" />
+      <label for="role-name">Role name</label>
+      <input id="role-name" pInputText formControlName="name" />
     </div>
-    <label class="check-field"
-      ><input type="checkbox" formControlName="isRequestable" /> Requestable role</label
-    >
+    <div class="check-field">
+      <p-checkbox inputId="role-requestable" formControlName="isRequestable" [binary]="true" />
+      <label for="role-requestable">Requestable role</label>
+    </div>
     <div class="dialog-actions">
-      <button type="button" (click)="createRoleOpen.set(false)">Cancel</button>
-      <button class="primary" type="submit" [disabled]="form.invalid || saving()">
-        {{ saving() ? 'Creating...' : 'Create role' }}
-      </button>
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="createRoleOpen.set(false)"
+      />
+      <p-button type="submit" label="Create role" [loading]="saving()" [disabled]="form.invalid" />
     </div>
   </form>
 </p-dialog>
@@ -149,77 +189,96 @@
   <form class="dialog-form" [formGroup]="roleEditForm" (ngSubmit)="saveRoleEdit()">
     <div class="field">
       <label for="edit-role-name">Role name</label>
-      <input id="edit-role-name" formControlName="name" />
+      <input id="edit-role-name" pInputText formControlName="name" />
     </div>
-    <label class="check-field"
-      ><input type="checkbox" formControlName="isRequestable" /> Requestable role</label
-    >
+    <div class="check-field">
+      <p-checkbox inputId="edit-role-requestable" formControlName="isRequestable" [binary]="true" />
+      <label for="edit-role-requestable">Requestable role</label>
+    </div>
     <div class="dialog-actions">
-      <button type="button" (click)="closeRoleEdit()">Cancel</button>
-      <button class="primary" type="submit" [disabled]="roleEditForm.invalid || saving()">
-        {{ saving() ? 'Saving...' : 'Save role' }}
-      </button>
+      <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="closeRoleEdit()" />
+      <p-button
+        type="submit"
+        label="Save role"
+        [loading]="saving()"
+        [disabled]="roleEditForm.invalid"
+      />
     </div>
   </form>
 </p-dialog>
 
 <section class="panel section-head">
   <h2>Role-permission matrix</h2>
-  <div class="table-wrap">
-    <table class="role-matrix">
-      <thead>
-        <tr>
-          <th>Role</th>
-          @for (permission of permissions(); track permission.id) {
-            <th title="{{ permission.name }}">{{ permission.code }}</th>
-          }
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (role of roles(); track role.id) {
-          <tr>
-            <td>
-              {{ role.name }}
-              @if (role.isRequestable) {
-                <small>(Requestable)</small>
-              }
-            </td>
-            @for (permission of permissions(); track permission.id) {
-              <td>
-                <input
-                  type="checkbox"
-                  [attr.aria-label]="permission.name + ' for ' + role.name"
-                  [checked]="selected[role.id]?.includes(permission.id)"
-                  (change)="toggle(role.id, permission.id, $any($event.target).checked)"
-                />
-              </td>
-            }
-            <td>
-              <div class="row-actions">
-                <button type="button" (click)="save(role)">Save</button>
-                @if (!role.isBuiltIn) {
-                  <button type="button" (click)="edit(role)">Edit</button>
-                  <button class="danger" type="button" (click)="remove(role)">Delete</button>
-                }
-              </div>
-            </td>
-          </tr>
+  <p-table
+    [value]="roles()"
+    [lazy]="true"
+    [lazyLoadOnInit]="false"
+    [paginator]="true"
+    [alwaysShowPaginator]="true"
+    [first]="(rolePage - 1) * pageSize"
+    [rows]="pageSize"
+    [totalRecords]="roleTotal()"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Page {currentPage} of {totalPages} · {totalRecords} items"
+    [scrollable]="true"
+    tableStyleClass="role-matrix"
+    [tableStyle]="{ 'min-width': '650px' }"
+    (onPage)="changeRolePage($event)"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Role</th>
+        @for (permission of permissions(); track permission.id) {
+          <th title="{{ permission.name }}">{{ permission.code }}</th>
         }
-      </tbody>
-    </table>
-  </div>
-  <div class="pager">
-    <button type="button" [disabled]="rolePage === 1" (click)="changeRolePage(rolePage - 1)">
-      Previous
-    </button>
-    <span>Page {{ rolePage }}</span>
-    <button
-      type="button"
-      [disabled]="rolePage * pageSize >= roleTotal()"
-      (click)="changeRolePage(rolePage + 1)"
-    >
-      Next
-    </button>
-  </div>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-role>
+      <tr>
+        <td>
+          {{ role.name }}
+          @if (role.isRequestable) {
+            <small>(Requestable)</small>
+          }
+        </td>
+        @for (permission of permissions(); track permission.id) {
+          <td>
+            <p-checkbox
+              [(ngModel)]="selected[role.id]"
+              [value]="permission.id"
+              [inputId]="'permission-' + role.id + '-' + permission.id"
+              [attr.aria-label]="permission.name + ' for ' + role.name"
+            />
+          </td>
+        }
+        <td>
+          <div class="row-actions">
+            <p-button label="Save" size="small" (onClick)="save(role)" />
+            @if (!role.isBuiltIn) {
+              <p-button
+                label="Edit"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="edit(role)"
+              />
+              <p-button
+                label="Delete"
+                size="small"
+                severity="danger"
+                [outlined]="true"
+                (onClick)="remove(role)"
+              />
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="permissions().length + 2">No roles found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>

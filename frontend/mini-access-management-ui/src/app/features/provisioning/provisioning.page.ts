@@ -1,12 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { TableModule, TablePageEvent } from 'primeng/table';
 import { AccessApiService } from '../../core/access-api.service';
 import { AccessRequest } from '../../models';
 
 @Component({
   selector: 'app-provisioning',
-  imports: [DatePipe],
+  imports: [DatePipe, ButtonModule, TableModule],
   templateUrl: './provisioning.page.html',
 })
 export class ProvisioningPage implements OnInit {
@@ -18,6 +20,7 @@ export class ProvisioningPage implements OnInit {
   readonly totalCount = signal(0);
   page = 1;
   readonly pageSize = 10;
+
   ngOnInit(): void {
     this.load();
   }
@@ -51,8 +54,8 @@ export class ProvisioningPage implements OnInit {
         }),
     });
   }
-  changePage(value: number): void {
-    this.page = value;
+  changePage(event: TablePageEvent): void {
+    this.page = event.first / event.rows + 1;
     this.load();
   }
 }

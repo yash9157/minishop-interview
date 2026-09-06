@@ -2,13 +2,25 @@ import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { TableModule, TablePageEvent } from 'primeng/table';
+import { TextareaModule } from 'primeng/textarea';
 import { AccessApiService } from '../../core/access-api.service';
 import { AccessRequest, Role, TargetSystem } from '../../models';
 
 @Component({
   selector: 'app-requests',
-  imports: [ReactiveFormsModule, DatePipe, DialogModule],
+  imports: [
+    ReactiveFormsModule,
+    DatePipe,
+    ButtonModule,
+    DialogModule,
+    SelectModule,
+    TableModule,
+    TextareaModule,
+  ],
   templateUrl: './requests.page.html',
 })
 export class RequestsPage implements OnInit {
@@ -22,6 +34,7 @@ export class RequestsPage implements OnInit {
   readonly saving = signal(false);
   page = 1;
   readonly pageSize = 10;
+
   readonly form = new FormGroup({
     targetSystemId: new FormControl(0, { nonNullable: true, validators: Validators.min(1) }),
     requestedRoleId: new FormControl('', { nonNullable: true, validators: Validators.required }),
@@ -75,8 +88,8 @@ export class RequestsPage implements OnInit {
       error: (e) => this.showError(e, 'Unable to submit request.'),
     });
   }
-  changePage(value: number): void {
-    this.page = value;
+  changePage(event: TablePageEvent): void {
+    this.page = event.first / event.rows + 1;
     this.load();
   }
   private showError(error: { error?: { detail?: string } }, fallback: string): void {
