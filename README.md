@@ -1,6 +1,6 @@
-# Access Management Portal
+# Mini.Access.Management
 
-Interview project built with ASP.NET Core 10, Angular 22, PrimeNG 22, EF Core,
+Interview project built with ASP.NET Core 8, Angular 22, PrimeNG 22, EF Core 8,
 ASP.NET Core Identity, JWT and MySQL 8.4.
 
 The portal supports user administration, multiple roles, effective permissions,
@@ -11,13 +11,13 @@ dashboard. Business table keys use `long`; Identity user and role keys use GUIDs
 
 ```text
 backend/src
-  MiniShop.Domain.Shared          enums, role names and validation constants
-  MiniShop.Domain                 one entity class per file
-  MiniShop.Application.Contracts DTOs, requests and paging contracts
-  MiniShop.Application           interfaces, business rules and EF queries
-  MiniShop.EntityFrameworkCore   DbContext, entity mappings, migrations and seed
-  MiniShop.HttpApi               controllers, JWT, Swagger, CORS and middleware
-frontend/minishop-ui             Angular standalone application
+  Mini.Access.Management.Domain.Shared          enums, role names and validation constants
+  Mini.Access.Management.Domain                 one entity class per file
+  Mini.Access.Management.Application.Contracts DTOs, service interfaces and paging contracts
+  Mini.Access.Management.Application           business services, validation and EF queries
+  Mini.Access.Management.EntityFrameworkCore   DbContext, entity mappings, migrations and seed
+  Mini.Access.Management.HttpApi               controllers, JWT, Swagger, CORS and middleware
+frontend/mini-access-management-ui             Angular standalone application
 database                         MySQL and SQL Server interview scripts
 ```
 
@@ -27,7 +27,7 @@ queries directly to keep this interview solution explicit and easy to follow.
 
 ## Prerequisites
 
-- .NET SDK 10
+- .NET 8 SDK
 - Node.js 24 or another Angular 22-supported Node.js release
 - Docker Desktop
 
@@ -60,9 +60,9 @@ docker compose ps
    you placed in `.env` and choose a random signing key of at least 32 characters.
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3308;Database=access_management;User=minishop;Password=YOUR_APP_PASSWORD" --project backend/src/MiniShop.HttpApi
-dotnet user-secrets set "Jwt:SigningKey" "YOUR_RANDOM_SIGNING_KEY_AT_LEAST_32_CHARACTERS" --project backend/src/MiniShop.HttpApi
-dotnet user-secrets set "DemoPassword" "Demo@12345" --project backend/src/MiniShop.HttpApi
+dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3308;Database=access_management;User=minishop;Password=YOUR_APP_PASSWORD" --project backend/src/Mini.Access.Management.HttpApi
+dotnet user-secrets set "Jwt:SigningKey" "YOUR_RANDOM_SIGNING_KEY_AT_LEAST_32_CHARACTERS" --project backend/src/Mini.Access.Management.HttpApi
+dotnet user-secrets set "DemoPassword" "Demo@12345" --project backend/src/Mini.Access.Management.HttpApi
 ```
 
 Do not use or commit credentials copied from the interview screenshots.
@@ -72,8 +72,8 @@ Do not use or commit credentials copied from the interview screenshots.
 
 ```powershell
 dotnet tool restore
-dotnet restore MiniShop.sln
-dotnet run --project backend/src/MiniShop.HttpApi
+dotnet restore Mini.Access.Management.sln
+dotnet run --project backend/src/Mini.Access.Management.HttpApi
 ```
 
 Swagger opens at `http://localhost:5080/swagger`.
@@ -81,7 +81,7 @@ Swagger opens at `http://localhost:5080/swagger`.
 5. In a second PowerShell window, run Angular:
 
 ```powershell
-Set-Location frontend/minishop-ui
+Set-Location frontend/mini-access-management-ui
 npm ci
 npm start
 ```
@@ -128,15 +128,15 @@ The initial migration is committed. To create a future migration:
 $env:ConnectionStrings__Default = "Server=localhost;Port=3308;Database=access_management;User=minishop;Password=YOUR_APP_PASSWORD"
 $env:Jwt__SigningKey = "YOUR_RANDOM_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
 $env:DemoPassword = "Demo@12345"
-dotnet ef migrations add YourMigrationName --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi --output-dir Migrations
-dotnet ef database update --project backend/src/MiniShop.EntityFrameworkCore --startup-project backend/src/MiniShop.HttpApi
+dotnet tool run dotnet-ef migrations add YourMigrationName --project backend/src/Mini.Access.Management.EntityFrameworkCore --startup-project backend/src/Mini.Access.Management.HttpApi --output-dir Migrations
+dotnet tool run dotnet-ef database update --project backend/src/Mini.Access.Management.EntityFrameworkCore --startup-project backend/src/Mini.Access.Management.HttpApi
 ```
 
 ## Build verification
 
 ```powershell
-dotnet build MiniShop.sln
-Set-Location frontend/minishop-ui
+dotnet build Mini.Access.Management.sln
+Set-Location frontend/mini-access-management-ui
 npm ci
 npm run build
 ```
@@ -145,6 +145,11 @@ The SQL answers are in:
 
 - `database/task1_access_management_mysql.sql`
 - `database/task2_mssql.sql`
+- `database/application_schema_mysql.sql` (generated from the real EF migrations)
+
+Import `postman/AccessManagement.postman_collection.json` to demonstrate the API.
+For the full empty-folder setup, project-generation commands, Angular routes,
+database migration steps and UI/CSS guide, read `BUILD_ACCESS_PORTAL_FROM_ZERO.md`.
 
 ## Assumptions and trade-offs
 

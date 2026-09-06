@@ -1,0 +1,16 @@
+import { Component, inject } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { AuthService } from './core/auth.service';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastModule, ConfirmDialogModule],
+  templateUrl: './app.html',
+  styleUrl: './app.css',
+})
+export class App {
+  readonly auth = inject(AuthService);
+  menuOpen = false;
+}

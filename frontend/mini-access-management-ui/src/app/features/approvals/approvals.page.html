@@ -1,0 +1,18 @@
+<div class="page-head"><div><h1>Pending approvals</h1><p class="muted">Approve or reject requests assigned to you.</p></div></div>
+@if (error()) { <p class="error-message">{{ error() }}</p> }
+<div class="panel table-wrap"><table>
+  <thead><tr><th>Requester</th><th>System</th><th>Role</th><th>Justification</th><th>Remarks</th><th>Decision</th></tr></thead>
+  <tbody>@for (request of requests(); track request.id) {
+    <tr><td>{{ request.requesterName }}</td><td>{{ request.targetSystem }}</td>
+      <td>{{ request.requestedRole }}</td><td>{{ request.businessJustification }}</td>
+      <td><input [formControl]="remarkControl(request.id)" placeholder="Required remarks"></td>
+      <td><button class="primary" type="button" [disabled]="remarkControl(request.id).invalid" (click)="decide(request.id, 'approve')">Approve</button>
+        <button class="danger" type="button" [disabled]="remarkControl(request.id).invalid" (click)="decide(request.id, 'reject')">Reject</button></td></tr>
+  } @empty { <tr><td colspan="6">No requests are awaiting your approval.</td></tr> }</tbody>
+</table>
+  <div class="pager">
+    <button type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
+    <span>Page {{ page }}</span>
+    <button type="button" [disabled]="page * pageSize >= totalCount()" (click)="changePage(page + 1)">Next</button>
+  </div>
+</div>

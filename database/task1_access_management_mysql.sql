@@ -1,5 +1,8 @@
-CREATE DATABASE IF NOT EXISTS access_management;
-USE access_management;
+-- Standalone answer for the interview's MySQL schema-design task.
+-- It is intentionally independent from ASP.NET Core Identity. The running API
+-- schema is generated from EF Core into application_schema_mysql.sql.
+CREATE DATABASE IF NOT EXISTS access_management_interview_task;
+USE access_management_interview_task;
 
 CREATE TABLE Users (
     Id CHAR(36) PRIMARY KEY,
@@ -53,6 +56,7 @@ CREATE TABLE AccessRequests (
     SubmittedAtUtc DATETIME(6) NULL,
     ProvisionedById CHAR(36) NULL,
     ProvisionedAtUtc DATETIME(6) NULL,
+    Version BIGINT NOT NULL DEFAULT 1,
     CHECK (Status IN ('Draft','Pending','Approved','Rejected','Provisioned')),
     FOREIGN KEY (RequesterId) REFERENCES Users(Id),
     FOREIGN KEY (TargetSystemId) REFERENCES TargetSystems(Id),
@@ -91,6 +95,9 @@ CREATE TABLE IdempotencyRecords (
     OperationName VARCHAR(80) NOT NULL,
     IdempotencyKey VARCHAR(100) NOT NULL,
     ResourceId VARCHAR(80) NOT NULL,
+    RequestHash CHAR(64) NOT NULL,
+    ResponseJson JSON NOT NULL,
+    StatusCode INT NOT NULL,
     CreatedAtUtc DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     UNIQUE (OperationName, IdempotencyKey)
 );
@@ -125,6 +132,26 @@ INSERT INTO RolePermissions (RoleId, PermissionId)
 SELECT '10000000-0000-0000-0000-000000000003', Id
 FROM Permissions WHERE Code IN ('ACCESS.READ', 'REPORT.READ');
 
+INSERT INTO TargetSystems (Name) VALUES ('Finance Portal'), ('Reporting Portal');
+
+INSERT INTO AccessRequests
+    (RequesterId, TargetSystemId, RequestedRoleId, BusinessJustification,
+     Status, SubmittedAtUtc)
+SELECT
+    '00000000-0000-0000-0000-000000000002', ts.Id,
+    '10000000-0000-0000-0000-000000000003',
+    'Requires reporting access for monthly operational work.',
+    'Pending', UTC_TIMESTAMP(6)
+FROM TargetSystems ts
+WHERE ts.Name = 'Reporting Portal';
+
+SET @SampleRequestId = LAST_INSERT_ID();
+INSERT INTO ApprovalHistory
+    (AccessRequestId, ApprovalLevel, ApproverId, Decision)
+VALUES
+    (@SampleRequestId, 1, '00000000-0000-0000-0000-000000000001', 'Pending'),
+    (@SampleRequestId, 2, '00000000-0000-0000-0000-000000000003', 'Pending');
+
 -- Effective permissions for a given user.
 SET @UserId = '00000000-0000-0000-0000-000000000002';
 SELECT DISTINCT p.Code, p.Name
@@ -158,10 +185,14 @@ WHERE r.Name IN ('Maker', 'Checker')
 GROUP BY u.Id, u.FullName
 HAVING COUNT(DISTINCT r.Name) = 2;
 
--- Composite indexes support permissions, approval queues, dashboard and audit queries.
+-- Starts with RoleId because the reverse lookup asks which users have a role.
 CREATE INDEX IX_UserRoles_RoleId ON UserRoles(RoleId, UserId);
+-- Starts with PermissionId because the PK already supports RoleId-first lookups.
 CREATE INDEX IX_RolePermissions_PermissionId ON RolePermissions(PermissionId, RoleId);
+-- Filters by status and then reads newest requests without scanning every row.
 CREATE INDEX IX_AccessRequests_Status_Created ON AccessRequests(Status, CreatedAtUtc);
+-- Matches the approver queue filters and preserves request/level lookup columns.
 CREATE INDEX IX_ApprovalHistory_Approver_Decision
     ON ApprovalHistory(ApproverId, Decision, AccessRequestId, ApprovalLevel);
+-- Supports the dashboard's newest-audit-record query.
 CREATE INDEX IX_AuditLogs_Timestamp ON AuditLogs(TimestampUtc DESC);

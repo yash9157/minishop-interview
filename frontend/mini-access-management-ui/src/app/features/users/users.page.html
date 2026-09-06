@@ -1,0 +1,57 @@
+<div class="page-head"><div><h1>Users</h1><p class="muted">Create users and assign multiple roles.</p></div></div>
+<form class="panel form-grid" [formGroup]="form" (ngSubmit)="create()">
+  <div class="field"><label for="new-user-name">Full name</label><input id="new-user-name" formControlName="fullName"></div>
+  <div class="field"><label for="new-user-email">Email</label><input id="new-user-email" formControlName="email"></div>
+  <div class="field"><label for="new-user-password">Password</label><input id="new-user-password" type="password" autocomplete="new-password" formControlName="password"></div>
+  <div class="field"><label for="new-user-manager">Manager</label><select id="new-user-manager" formControlName="managerId">
+    <option [ngValue]="null">No manager</option>
+    @for (user of managerOptions(); track user.id) { <option [value]="user.id">{{ user.fullName }}</option> }
+  </select></div>
+  <div class="full"><button class="primary" type="submit" [disabled]="form.invalid">Create user</button></div>
+</form>
+@if (error()) { <p class="error-message">{{ error() }}</p> }
+@if (editingId()) {
+  <form class="panel form-grid section-head" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+    <div class="field"><label for="edit-user-name">Full name</label><input id="edit-user-name" formControlName="fullName"></div>
+    <div class="field"><label for="edit-user-email">Email</label><input id="edit-user-email" formControlName="email"></div>
+    <div class="field"><label for="edit-user-manager">Manager</label><select id="edit-user-manager" formControlName="managerId">
+      <option [ngValue]="null">No manager</option>
+      @for (manager of managerOptions(); track manager.id) {
+        @if (manager.id !== editingId()) { <option [value]="manager.id">{{ manager.fullName }}</option> }
+      }
+    </select></div>
+    <label><input type="checkbox" formControlName="isActive"> Active</label>
+    <div class="full">
+      <button class="primary" type="submit" [disabled]="editForm.invalid">Save changes</button>
+      <button type="button" (click)="editingId.set(null)">Cancel</button>
+    </div>
+  </form>
+}
+@if (permissions().length) {
+  <div class="panel section-head">
+    <strong>Effective permissions for {{ permissionsFor() }}:</strong>
+    {{ permissions().join(', ') }}
+  </div>
+}
+<div class="panel section-head table-wrap"><table>
+  <thead><tr><th>User</th><th>Manager</th><th>Roles</th><th>Assign role</th><th>Actions</th></tr></thead>
+  <tbody>@for (user of users(); track user.id) {
+    <tr><td><strong>{{ user.fullName }}</strong><br><small>{{ user.email }}</small></td>
+      <td>{{ user.managerName || '-' }}</td><td>@for (role of user.roles; track role) {
+        <span class="status">{{ role }} <button type="button" (click)="removeRole(user, role)">×</button></span>
+      }</td>
+      <td><select [(value)]="selectedRoles[user.id]" (change)="selectedRoles[user.id] = $any($event.target).value">
+        <option value="">Select</option>@for (role of roles(); track role.id) {
+          <option [value]="role.id">{{ role.name }}</option>
+        }</select> <button type="button" (click)="assign(user)">Assign</button></td>
+      <td><button type="button" (click)="showPermissions(user)">Permissions</button>
+        <button type="button" (click)="edit(user)">Edit</button>
+        <button class="danger" type="button" (click)="remove(user)">Deactivate</button></td></tr>
+  }</tbody>
+</table>
+  <div class="pager">
+    <button type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
+    <span>Page {{ page }}</span>
+    <button type="button" [disabled]="page * pageSize >= totalCount()" (click)="changePage(page + 1)">Next</button>
+  </div>
+</div>

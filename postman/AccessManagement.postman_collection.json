@@ -1,0 +1,134 @@
+{
+  "info": {
+    "name": "Access Management Portal",
+    "description": "Interview demonstration collection. Run Login first; its test stores the JWT token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5080" },
+    { "key": "adminEmail", "value": "admin@access.local" },
+    { "key": "demoPassword", "value": "Demo@12345" },
+    { "key": "token", "value": "" },
+    { "key": "idempotencyKey", "value": "replace-with-one-stable-guid-per-logical-create" },
+    { "key": "userId", "value": "" },
+    { "key": "roleId", "value": "" },
+    { "key": "targetSystemId", "value": "1" },
+    { "key": "accessRequestId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "1 - Login",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{demoPassword}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Login succeeds', () => pm.response.to.have.status(200));",
+          "const response = pm.response.json();",
+          "pm.collectionVariables.set('token', response.accessToken);"
+        ] }
+      }]
+    },
+    {
+      "name": "2 - Current user",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+    },
+    {
+      "name": "3 - Dashboard",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard" }
+    },
+    {
+      "name": "4 - Users (paged)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/users?page=1&pageSize=10&search=" }
+    },
+    {
+      "name": "5 - Create user (safe retry)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Interview User\",\n  \"email\": \"interview.user@example.com\",\n  \"password\": \"Interview@123\",\n  \"managerId\": null\n}"
+        },
+        "url": "{{baseUrl}}/api/users"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "pm.test('Created or replayed', () => pm.expect([200, 201]).to.include(pm.response.code));",
+          "pm.collectionVariables.set('userId', pm.response.json().id);"
+        ] }
+      }]
+    },
+    {
+      "name": "6 - Roles (paged)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/roles?page=1&pageSize=100" }
+    },
+    {
+      "name": "7 - Permissions (paged)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/permissions?page=1&pageSize=100" }
+    },
+    {
+      "name": "8 - Target systems",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/target-systems" }
+    },
+    {
+      "name": "9 - Create access-request draft",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"targetSystemId\": {{targetSystemId}},\n  \"requestedRoleId\": \"{{roleId}}\",\n  \"businessJustification\": \"Required for the assigned monthly reporting duties.\"\n}"
+        },
+        "url": "{{baseUrl}}/api/access-requests"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "exec": [
+          "if (pm.response.code === 201) pm.collectionVariables.set('accessRequestId', pm.response.json().id);"
+        ] }
+      }]
+    },
+    {
+      "name": "10 - Submit request",
+      "request": { "method": "POST", "url": "{{baseUrl}}/api/access-requests/{{accessRequestId}}/submit" }
+    },
+    {
+      "name": "11 - Pending approvals",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/access-requests/pending-approvals?page=1&pageSize=10" }
+    },
+    {
+      "name": "12 - Approve current level",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"remarks\": \"Approved after validating the business requirement.\"\n}" },
+        "url": "{{baseUrl}}/api/access-requests/{{accessRequestId}}/approve"
+      }
+    },
+    {
+      "name": "13 - Provision approved request",
+      "request": { "method": "POST", "url": "{{baseUrl}}/api/access-requests/{{accessRequestId}}/provision" }
+    },
+    {
+      "name": "14 - Audit log",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/audit-logs?page=1&pageSize=10" }
+    }
+  ]
+}

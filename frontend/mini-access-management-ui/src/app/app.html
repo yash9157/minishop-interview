@@ -1,0 +1,74 @@
+<p-toast />
+<p-confirmdialog />
+
+@if (auth.user()) {
+  <div class="shell">
+    <aside [class.open]="menuOpen">
+      <button class="close-menu" type="button" aria-label="Close navigation" (click)="menuOpen = false">
+        <i class="pi pi-times"></i>
+      </button>
+      <div class="brand">
+        <span class="mark">A</span>
+        <span>Mini Access<small>Management</small></span>
+      </div>
+
+      <nav>
+        @if (auth.isAdmin()) {
+          <a routerLink="/dashboard" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-chart-bar"></i>Dashboard
+          </a>
+        }
+        <a routerLink="/requests" routerLinkActive="active" (click)="menuOpen = false">
+          <i class="pi pi-send"></i>My Requests
+        </a>
+        @if (auth.canApprove()) {
+          <a routerLink="/approvals" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-check-circle"></i>Approvals
+          </a>
+        }
+        @if (auth.canProvision()) {
+          <a routerLink="/provisioning" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-key"></i>Provisioning
+          </a>
+        }
+        @if (auth.isAdmin()) {
+          <span class="label">Administration</span>
+          <a routerLink="/users" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-users"></i>Users
+          </a>
+          <a routerLink="/roles" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-shield"></i>Roles & Permissions
+          </a>
+          <a routerLink="/audit" routerLinkActive="active" (click)="menuOpen = false">
+            <i class="pi pi-history"></i>Audit Trail
+          </a>
+        }
+      </nav>
+
+      <div class="profile">
+        <span class="avatar">{{ auth.user()?.fullName?.charAt(0) }}</span>
+        <div>
+          <strong>{{ auth.user()?.fullName }}</strong>
+          <small>{{ auth.user()?.roles?.[0] }}</small>
+        </div>
+        <button type="button" aria-label="Sign out" (click)="auth.logout()">
+          <i class="pi pi-sign-out"></i>
+        </button>
+      </div>
+    </aside>
+
+    <section class="content">
+      <button
+        class="menu"
+        type="button"
+        (click)="menuOpen = !menuOpen"
+        aria-label="Toggle navigation"
+      >
+        <i class="pi pi-bars"></i>
+      </button>
+      <main><router-outlet /></main>
+    </section>
+  </div>
+} @else {
+  <router-outlet />
+}

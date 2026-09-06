@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mini.Access.Management.Domain\Mini.Access.Management.Domain.csproj" />
+    <ProjectReference Include="..\Mini.Access.Management.Application.Contracts\Mini.Access.Management.Application.Contracts.csproj" />
+    <ProjectReference Include="..\Mini.Access.Management.EntityFrameworkCore\Mini.Access.Management.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.30" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.30" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
